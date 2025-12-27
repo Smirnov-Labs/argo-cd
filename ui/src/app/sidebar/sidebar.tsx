@@ -77,56 +77,56 @@ export const Sidebar = (props: SidebarProps) => {
             <div className={`sidebar-overlay ${isMobileMenuOpen ? 'sidebar-overlay--visible' : ''}`} onClick={toggleMobileMenu} />
 
             <div className={`sidebar ${props.pref.hideSidebar && !isMobileMenuOpen ? 'sidebar--collapsed' : ''}`}>
-            <div className='sidebar__container'>
-                <div className='sidebar__logo'>
-                    <div onClick={() => services.viewPreferences.updatePreferences({...props.pref, hideSidebar: !props.pref.hideSidebar})} className='sidebar__collapse-button'>
-                        <i className={`fas fa-arrow-${props.pref.hideSidebar ? 'right' : 'left'}`} />
+                <div className='sidebar__container'>
+                    <div className='sidebar__logo'>
+                        <div onClick={() => services.viewPreferences.updatePreferences({...props.pref, hideSidebar: !props.pref.hideSidebar})} className='sidebar__collapse-button'>
+                            <i className={`fas fa-arrow-${props.pref.hideSidebar ? 'right' : 'left'}`} />
+                        </div>
+                        {!props.pref.hideSidebar && (
+                            <div className='sidebar__logo-container'>
+                                <img
+                                    onClick={() => context.history.push('/')}
+                                    title={'Go to start page'}
+                                    src='assets/images/argologo.svg'
+                                    alt='Argo'
+                                    className='sidebar__logo__text-logo'
+                                />
+                                <div className='sidebar__version' onClick={props.onVersionClick}>
+                                    {loading ? 'Loading...' : error?.state ? 'Unknown' : version?.Version || 'Unknown'}
+                                </div>
+                            </div>
+                        )}
+                        <img onClick={() => context.history.push('/')} title={'Go to start page'} src='assets/images/logo.png' alt='Argo' className='sidebar__logo__character' />{' '}
                     </div>
-                    {!props.pref.hideSidebar && (
-                        <div className='sidebar__logo-container'>
-                            <img
-                                onClick={() => context.history.push('/')}
-                                title={'Go to start page'}
-                                src='assets/images/argologo.svg'
-                                alt='Argo'
-                                className='sidebar__logo__text-logo'
-                            />
-                            <div className='sidebar__version' onClick={props.onVersionClick}>
-                                {loading ? 'Loading...' : error?.state ? 'Unknown' : version?.Version || 'Unknown'}
+
+                    {(props.navItems || []).map(item => (
+                        <Tooltip key={item.path} content={<div className='sidebar__tooltip'>{item?.tooltip || item.title}</div>} {...tooltipProps}>
+                            <div
+                                key={item.title}
+                                className={`sidebar__nav-item ${locationPath === item.path || locationPath.startsWith(`${item.path}/`) ? 'sidebar__nav-item--active' : ''}`}
+                                onClick={() => context.history.push(item.path)}>
+                                <div>
+                                    <i className={item?.iconClassName || ''} />
+                                    {!props.pref.hideSidebar && item.title}
+                                </div>
                             </div>
-                        </div>
+                        </Tooltip>
+                    ))}
+
+                    {props.pref.hideSidebar && (
+                        <Tooltip content='Show Filters' {...tooltipProps}>
+                            <div
+                                onClick={() => services.viewPreferences.updatePreferences({...props.pref, hideSidebar: !props.pref.hideSidebar})}
+                                className='sidebar__nav-item sidebar__filter-button'>
+                                <div>
+                                    <i className={`fas fa-filter`} />
+                                </div>
+                            </div>
+                        </Tooltip>
                     )}
-                    <img onClick={() => context.history.push('/')} title={'Go to start page'} src='assets/images/logo.png' alt='Argo' className='sidebar__logo__character' />{' '}
                 </div>
-
-                {(props.navItems || []).map(item => (
-                    <Tooltip key={item.path} content={<div className='sidebar__tooltip'>{item?.tooltip || item.title}</div>} {...tooltipProps}>
-                        <div
-                            key={item.title}
-                            className={`sidebar__nav-item ${locationPath === item.path || locationPath.startsWith(`${item.path}/`) ? 'sidebar__nav-item--active' : ''}`}
-                            onClick={() => context.history.push(item.path)}>
-                            <div>
-                                <i className={item?.iconClassName || ''} />
-                                {!props.pref.hideSidebar && item.title}
-                            </div>
-                        </div>
-                    </Tooltip>
-                ))}
-
-                {props.pref.hideSidebar && (
-                    <Tooltip content='Show Filters' {...tooltipProps}>
-                        <div
-                            onClick={() => services.viewPreferences.updatePreferences({...props.pref, hideSidebar: !props.pref.hideSidebar})}
-                            className='sidebar__nav-item sidebar__filter-button'>
-                            <div>
-                                <i className={`fas fa-filter`} />
-                            </div>
-                        </div>
-                    </Tooltip>
-                )}
+                <div id={SIDEBAR_TOOLS_ID} />
             </div>
-            <div id={SIDEBAR_TOOLS_ID} />
-        </div>
         </>
     );
 };
