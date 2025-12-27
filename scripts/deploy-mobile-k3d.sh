@@ -116,9 +116,15 @@ kubectl patch deployment argocd-repo-server -n argocd \
 echo -e "\n${GREEN}Step 7: Waiting for rollout to complete...${NC}"
 kubectl rollout status deployment/argocd-server -n argocd --timeout=5m
 
-# Step 8: Get admin password
-echo -e "\n${GREEN}Step 8: Retrieving admin password...${NC}"
-ADMIN_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+# Step 8: Set static admin password
+echo -e "\n${GREEN}Step 8: Setting static admin password...${NC}"
+ADMIN_PASSWORD="TestTest123"
+
+# Generate bcrypt hash for the password and patch the secret
+# argocd uses bcrypt, we'll use htpasswd or a simple approach
+BCRYPT_HASH=$(htpasswd -nbBC 10 "" "${ADMIN_PASSWORD}" | tr -d ':\n' | sed 's/$2y/$2a/')
+kubectl -n argocd patch secret argocd-secret \
+  -p '{"stringData": {"admin.password": "'"${BCRYPT_HASH}"'", "admin.passwordMtime": "'"$(date +%FT%T%Z)"'"}}' || echo "Password patch optional"
 
 # Step 9: Deploy sample applications for testing
 echo -e "\n${GREEN}Step 9: Creating sample apps namespace and project...${NC}"

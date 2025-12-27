@@ -74,9 +74,19 @@ export const FiltersGroup = (props: {
     collapsed?: boolean;
     title?: string;
 }) => {
+    // On mobile, filters are collapsed by default and can be toggled
+    const [mobileExpanded, setMobileExpanded] = React.useState(false);
+
     return (
-        !props.collapsed && (
-            <div className='filters-group'>
+        <div className={`filters-group ${props.collapsed ? 'filters-group--collapsed' : ''} ${mobileExpanded ? 'filters-group--mobile-expanded' : ''}`}>
+            {/* Mobile toggle button */}
+            <button className='filters-group__mobile-toggle' onClick={() => setMobileExpanded(!mobileExpanded)}>
+                <i className={`fa fa-filter`} />
+                <span>Filters</span>
+                <i className={`fa fa-chevron-${mobileExpanded ? 'up' : 'down'}`} />
+            </button>
+
+            <div className='filters-group__filters-content'>
                 {props.title && <div className='filters-group__title'>{props.title}</div>}
                 {props.appliedFilter?.length > 0 && props.onClearFilter && (
                     <div className='filters-group__header'>
@@ -88,7 +98,7 @@ export const FiltersGroup = (props: {
                 {props.children}
                 <div className='filters-group__content'>{props.content}</div>
             </div>
-        )
+        </div>
     );
 };
 

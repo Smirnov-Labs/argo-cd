@@ -55,6 +55,10 @@ export const Sidebar = (props: SidebarProps) => {
         setIsMobileMenuOpen(!isMobileMenuOpen);
     };
 
+    // On mobile, always show full sidebar when menu is open
+    // On desktop, respect the hideSidebar preference
+    const showFullSidebar = isMobileMenuOpen || !props.pref.hideSidebar;
+
     const tooltipProps = {
         placement: 'right' as Placement,
         popperOptions: {
@@ -68,21 +72,27 @@ export const Sidebar = (props: SidebarProps) => {
 
     return (
         <>
-            {/* Mobile hamburger menu button */}
-            <button className='mobile-menu-button' onClick={toggleMobileMenu} aria-label='Toggle menu'>
-                <i className={`fas fa-${isMobileMenuOpen ? 'times' : 'bars'}`} />
-            </button>
+            {/* Mobile hamburger menu button - hidden when sidebar is open */}
+            {!isMobileMenuOpen && (
+                <button className='mobile-menu-button' onClick={toggleMobileMenu} aria-label='Open menu'>
+                    <i className='fas fa-bars' />
+                </button>
+            )}
 
             {/* Mobile overlay backdrop */}
             <div className={`sidebar-overlay ${isMobileMenuOpen ? 'sidebar-overlay--visible' : ''}`} onClick={toggleMobileMenu} />
 
-            <div className={`sidebar ${props.pref.hideSidebar && !isMobileMenuOpen ? 'sidebar--collapsed' : ''}`}>
+            <div className={`sidebar ${props.pref.hideSidebar && !isMobileMenuOpen ? 'sidebar--collapsed' : ''} ${isMobileMenuOpen ? 'sidebar--mobile-open' : ''}`}>
                 <div className='sidebar__container'>
+                    {/* Mobile close button */}
+                    <button className='sidebar__mobile-close' onClick={toggleMobileMenu} aria-label='Close menu'>
+                        <i className='fas fa-times' />
+                    </button>
                     <div className='sidebar__logo'>
                         <div onClick={() => services.viewPreferences.updatePreferences({...props.pref, hideSidebar: !props.pref.hideSidebar})} className='sidebar__collapse-button'>
                             <i className={`fas fa-arrow-${props.pref.hideSidebar ? 'right' : 'left'}`} />
                         </div>
-                        {!props.pref.hideSidebar && (
+                        {showFullSidebar && (
                             <div className='sidebar__logo-container'>
                                 <img
                                     onClick={() => context.history.push('/')}
@@ -107,13 +117,13 @@ export const Sidebar = (props: SidebarProps) => {
                                 onClick={() => context.history.push(item.path)}>
                                 <div>
                                     <i className={item?.iconClassName || ''} />
-                                    {!props.pref.hideSidebar && item.title}
+                                    {showFullSidebar && item.title}
                                 </div>
                             </div>
                         </Tooltip>
                     ))}
 
-                    {props.pref.hideSidebar && (
+                    {!showFullSidebar && (
                         <Tooltip content='Show Filters' {...tooltipProps}>
                             <div
                                 onClick={() => services.viewPreferences.updatePreferences({...props.pref, hideSidebar: !props.pref.hideSidebar})}

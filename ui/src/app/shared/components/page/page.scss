@@ -83,6 +83,12 @@
     padding-left: 0 !important;
     &__top-bar {
         left: $sidebar-width !important;
+
+        // On mobile, position from left edge with space for hamburger
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            left: 0 !important;
+            padding-left: 60px;
+        }
     }
 }
 
