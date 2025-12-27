@@ -276,6 +276,18 @@
     }
 
     // Fix the page top-bar on mobile (used in application details)
+    .page__top-bar {
+        position: fixed !important;
+        top: 0;
+        left: 0 !important;
+        right: 0;
+        height: auto !important; // Allow expansion to fit content
+        max-height: 50vh; // Don't let it take more than half the screen
+        overflow-y: auto;
+        z-index: 100;
+        padding-left: 60px; // Space for hamburger
+    }
+
     .page__top-bar .top-bar {
         position: relative !important;
         padding: 8px !important;
@@ -330,8 +342,8 @@
     // Fix application details page layout
     .application-details {
         &__wrapper {
-            margin-top: 120px; // Space for mobile toolbar
-            height: calc(100vh - 120px) !important;
+            margin-top: 260px; // Space for mobile toolbar (breadcrumbs + action buttons)
+            height: calc(100vh - 260px) !important;
         }
 
         // Status panel - stack items vertically and make scrollable
