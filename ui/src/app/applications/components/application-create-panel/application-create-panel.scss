@@ -1,4 +1,5 @@
 @import 'node_modules/argo-ui/src/styles/config';
+@import '../../../shared/config';
 
 .application-create-panel {
 
@@ -6,6 +7,14 @@
         position: absolute;
         right: 1em;
         top: 1em;
+
+        // Position better on mobile
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            position: relative;
+            right: auto;
+            top: auto;
+            margin-bottom: 16px;
+        }
     }
 
     &__sync-params {
@@ -13,7 +22,7 @@
     }
 
     .checkbox-container {
-        margin: 0.5em ;
+        margin: 0.5em;
     }
 
     pre {
@@ -24,5 +33,64 @@
 
     .row.argo-form-row .columns {
         padding-left: 0;
+    }
+
+    // Mobile-specific fixes
+    @media screen and (max-width: $mobile-breakpoint - 1px) {
+        // Stack form sections
+        .white-box {
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+
+        // Fix form field layout
+        .row.argo-form-row {
+            flex-direction: column;
+            margin: 0;
+
+            .columns {
+                width: 100% !important;
+                flex: 0 0 100% !important;
+                max-width: 100%;
+                padding: 0 !important;
+                margin-bottom: 12px;
+            }
+        }
+
+        // Better dropdown/select positioning
+        .argo-dropdown,
+        .argo-select {
+            width: 100%;
+        }
+
+        // Fix section headers
+        strong {
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        // Better checkbox/toggle layout
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-height: 44px;
+            margin: 8px 0;
+        }
+
+        // Ensure labels are full width
+        label {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        // Better input field spacing
+        input[type="text"],
+        input[type="url"],
+        select,
+        textarea {
+            width: 100%;
+            margin-bottom: 8px;
+        }
     }
 }
