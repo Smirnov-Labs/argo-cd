@@ -120,8 +120,111 @@ kubectl rollout status deployment/argocd-server -n argocd --timeout=5m
 echo -e "\n${GREEN}Step 8: Retrieving admin password...${NC}"
 ADMIN_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
 
-# Step 9: Port forward
-echo -e "\n${GREEN}Step 9: Setting up port forwarding...${NC}"
+# Step 9: Deploy sample applications for testing
+echo -e "\n${GREEN}Step 9: Creating sample apps namespace and project...${NC}"
+
+# Create sample-apps namespace
+kubectl create namespace sample-apps --dry-run=client -o yaml | kubectl apply -f -
+
+# Wait for ArgoCD server to be ready before creating resources
+kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=120s
+
+# Create a project for sample apps
+cat <<'PROJECTEOF' | kubectl apply -f -
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: mobile-test
+  namespace: argocd
+spec:
+  description: Project for testing mobile UI
+  sourceRepos:
+    - '*'
+  destinations:
+    - namespace: sample-apps
+      server: https://kubernetes.default.svc
+    - namespace: default
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+PROJECTEOF
+
+echo -e "${GREEN}✓ Project created${NC}"
+
+# Create sample applications via ArgoCD
+echo -e "\n${GREEN}Creating sample applications...${NC}"
+
+# Whoami app - simple web server that returns request info
+cat <<'WHOAMIEOF' | kubectl apply -f -
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: whoami
+  namespace: argocd
+spec:
+  project: mobile-test
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps
+    path: helm-guestbook
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sample-apps
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+WHOAMIEOF
+
+# Create a simple Guestbook app
+cat <<'GUESTBOOKEOF' | kubectl apply -f -
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: guestbook
+  namespace: argocd
+spec:
+  project: mobile-test
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps
+    path: guestbook
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sample-apps
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+GUESTBOOKEOF
+
+# Create a Kustomize app
+cat <<'KUSTOMIZEEOF' | kubectl apply -f -
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kustomize-app
+  namespace: argocd
+spec:
+  project: mobile-test
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps
+    path: kustomize-guestbook
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sample-apps
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+KUSTOMIZEEOF
+
+echo -e "${GREEN}✓ Sample applications created${NC}"
+
+# Step 10: Port forward
+echo -e "\n${GREEN}Step 10: Setting up port forwarding...${NC}"
 echo "Starting port-forward in background..."
 
 # Kill any existing port-forward on the target port
@@ -133,7 +236,7 @@ PORT_FORWARD_PID=$!
 # Wait for port-forward to be ready
 sleep 3
 
-# Step 10: Success!
+# Step 11: Success!
 echo -e "\n${GREEN}========================================="
 echo "✅ ArgoCD Mobile UI Deployed Successfully!"
 echo "==========================================${NC}"
@@ -143,9 +246,19 @@ echo "   URL: https://localhost:${ARGOCD_PORT}"
 echo "   Username: admin"
 echo "   Password: ${ADMIN_PASSWORD}"
 echo ""
+echo "📦 Sample Applications Deployed:"
+echo "   - guestbook (plain YAML manifests)"
+echo "   - whoami (Helm chart)"
+echo "   - kustomize-app (Kustomize)"
+echo "   Project: mobile-test"
+echo ""
 echo "🔧 Useful Commands:"
 echo "   # View pods"
 echo "   kubectl get pods -n argocd"
+echo "   kubectl get pods -n sample-apps"
+echo ""
+echo "   # View ArgoCD apps"
+echo "   kubectl get applications -n argocd"
 echo ""
 echo "   # View logs"
 echo "   kubectl logs -n argocd deployment/argocd-server -f"
@@ -161,6 +274,7 @@ echo "   1. Open https://localhost:${ARGOCD_PORT} in Chrome"
 echo "   2. Press F12 → Ctrl+Shift+M (device mode)"
 echo "   3. Select 'iPhone 12 Pro'"
 echo "   4. Login and test mobile features!"
+echo "   5. You'll see 3 sample apps to explore!"
 echo ""
 echo "Port-forward PID: ${PORT_FORWARD_PID}"
 echo "To stop port-forward: kill ${PORT_FORWARD_PID}"

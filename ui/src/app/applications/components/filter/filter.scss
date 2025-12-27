@@ -125,7 +125,7 @@ $slate: #191826;
     display: flex;
     flex-wrap: wrap;
     margin-top: 2em;
-    
+
     &__toggle {
         display: none;
         cursor: pointer;
@@ -151,6 +151,11 @@ $slate: #191826;
     &__content {
         margin-left: 220px;
         width: 100%;
+
+        // On mobile, remove the left margin and use full width
+        @include breakpoint(small only) {
+            margin-left: 0;
+        }
     }
 
     &__header {
@@ -175,5 +180,16 @@ $slate: #191826;
                 background: $sidebar-color !important;
             }
         }
+
+        // On mobile, adjust the header position
+        @include breakpoint(small only) {
+            margin-top: 0;
+        }
+    }
+
+    // Mobile-specific layout
+    @include breakpoint(small only) {
+        flex-direction: column;
+        margin-top: 1em;
     }
 }

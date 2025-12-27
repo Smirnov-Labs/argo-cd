@@ -119,6 +119,11 @@ $deselected-text: #818d94;
         margin-bottom: 1em;
         font-size: 20px;
         color: $deselected-text;
+
+        // Hide on mobile - hamburger menu handles open/close
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            display: none;
+        }
     }
 
     &--collapsed {
