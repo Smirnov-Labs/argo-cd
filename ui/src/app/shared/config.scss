@@ -1,2 +1,7 @@
 $sidebar-width: 230px;
 $collapsed-sidebar-width: 60px;
+
+// Mobile-specific constants
+$mobile-breakpoint: 640px; // Foundation 'small' breakpoint
+$touch-target-size: 44px; // Minimum touch target size (Apple HIG, Material Design)
+$mobile-spacing: 16px; // Standard mobile spacing

@@ -33,6 +33,27 @@ export const Sidebar = (props: SidebarProps) => {
     const context = React.useContext(Context);
     const [version, loading, error] = useData(() => services.version.version());
     const locationPath = context.history.location.pathname;
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
+    // Close mobile menu when route changes
+    React.useEffect(() => {
+        setIsMobileMenuOpen(false);
+    }, [locationPath]);
+
+    // Close mobile menu on escape key
+    React.useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isMobileMenuOpen) {
+                setIsMobileMenuOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [isMobileMenuOpen]);
+
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(!isMobileMenuOpen);
+    };
 
     const tooltipProps = {
         placement: 'right' as Placement,
@@ -46,7 +67,16 @@ export const Sidebar = (props: SidebarProps) => {
     };
 
     return (
-        <div className={`sidebar ${props.pref.hideSidebar ? 'sidebar--collapsed' : ''}`}>
+        <>
+            {/* Mobile hamburger menu button */}
+            <button className='mobile-menu-button' onClick={toggleMobileMenu} aria-label='Toggle menu'>
+                <i className={`fas fa-${isMobileMenuOpen ? 'times' : 'bars'}`} />
+            </button>
+
+            {/* Mobile overlay backdrop */}
+            <div className={`sidebar-overlay ${isMobileMenuOpen ? 'sidebar-overlay--visible' : ''}`} onClick={toggleMobileMenu} />
+
+            <div className={`sidebar ${props.pref.hideSidebar && !isMobileMenuOpen ? 'sidebar--collapsed' : ''}`}>
             <div className='sidebar__container'>
                 <div className='sidebar__logo'>
                     <div onClick={() => services.viewPreferences.updatePreferences({...props.pref, hideSidebar: !props.pref.hideSidebar})} className='sidebar__collapse-button'>
@@ -97,5 +127,6 @@ export const Sidebar = (props: SidebarProps) => {
             </div>
             <div id={SIDEBAR_TOOLS_ID} />
         </div>
+        </>
     );
 };

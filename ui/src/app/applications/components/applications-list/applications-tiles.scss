@@ -6,6 +6,19 @@
     grid-template-columns: repeat(auto-fill,minmax(370px,1fr));
     padding: 0 12px;
 
+    // On mobile, use smaller minimum and full-width cards
+    @media screen and (max-width: $mobile-breakpoint - 1px) {
+        grid-template-columns: 1fr; // Single column on mobile
+        gap: 16px;
+        padding: 0 8px;
+    }
+
+    // On small tablets, allow 2 columns
+    @media screen and (min-width: $mobile-breakpoint) and (max-width: 1023px) {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+    }
+
     &__wrapper {
         height: 100%;
     }
