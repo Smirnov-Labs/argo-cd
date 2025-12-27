@@ -1,15 +1,27 @@
 import * as React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import '@testing-library/jest-dom';
 import {Sidebar} from './sidebar';
 import {Context} from '../shared/context';
-import {ViewPreferences} from '../shared/services';
+import {
+    renderWithContext,
+    setViewportSize,
+    VIEWPORTS,
+    screen,
+    fireEvent,
+    waitFor
+} from '../__tests__/test-utils';
+import {
+    mockRouterContext,
+    mockNavItems,
+    mockViewPreferences,
+    mockVersion
+} from '../__tests__/mock-data';
 
 // Mock the services
 jest.mock('../shared/services', () => ({
     services: {
         version: {
-            version: jest.fn().mockResolvedValue({Version: '2.0.0'})
+            version: jest.fn().mockResolvedValue(mockVersion)
         },
         viewPreferences: {
             updatePreferences: jest.fn()
@@ -40,34 +52,17 @@ jest.mock('argo-ui', () => ({
     }
 }));
 
-const mockContext = {
-    history: {
-        location: {pathname: '/applications'},
-        push: jest.fn()
-    }
-};
-
-const mockNavItems = [
-    {path: '/applications', iconClassName: 'fa fa-th', title: 'Applications'},
-    {path: '/settings', iconClassName: 'fa fa-cog', title: 'Settings'}
-];
-
-const defaultPrefs: ViewPreferences = {
-    hideSidebar: false,
-    theme: 'light'
-} as ViewPreferences;
-
 describe('Sidebar Component', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        // Set desktop viewport by default
+        setViewportSize(VIEWPORTS.DESKTOP.HD.width, VIEWPORTS.DESKTOP.HD.height);
     });
 
     describe('Desktop Behavior', () => {
         test('renders sidebar with navigation items', () => {
-            render(
-                <Context.Provider value={mockContext as any}>
-                    <Sidebar navItems={mockNavItems} pref={defaultPrefs} onVersionClick={() => {}} />
-                </Context.Provider>
+            renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
             );
 
             expect(screen.getByText('Applications')).toBeInTheDocument();
@@ -75,23 +70,18 @@ describe('Sidebar Component', () => {
         });
 
         test('renders version number', async () => {
-            render(
-                <Context.Provider value={mockContext as any}>
-                    <Sidebar navItems={mockNavItems} pref={defaultPrefs} onVersionClick={() => {}} />
-                </Context.Provider>
+            renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
             );
 
             await waitFor(() => {
-                expect(screen.getByText('2.0.0')).toBeInTheDocument();
+                expect(screen.getByText(mockVersion.Version)).toBeInTheDocument();
             });
         });
 
         test('applies collapsed class when hideSidebar is true', () => {
-            const collapsedPrefs = {...defaultPrefs, hideSidebar: true};
-            const {container} = render(
-                <Context.Provider value={mockContext as any}>
-                    <Sidebar navItems={mockNavItems} pref={collapsedPrefs} onVersionClick={() => {}} />
-                </Context.Provider>
+            const {container} = renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.sidebarCollapsed} onVersionClick={() => {}} />
             );
 
             const sidebar = container.querySelector('.sidebar');
@@ -100,11 +90,14 @@ describe('Sidebar Component', () => {
     });
 
     describe('Mobile Menu Behavior', () => {
+        beforeEach(() => {
+            // Set mobile viewport for these tests
+            setViewportSize(VIEWPORTS.MOBILE.IPHONE_12.width, VIEWPORTS.MOBILE.IPHONE_12.height);
+        });
+
         test('renders mobile hamburger menu button', () => {
-            render(
-                <Context.Provider value={mockContext as any}>
-                    <Sidebar navItems={mockNavItems} pref={defaultPrefs} onVersionClick={() => {}} />
-                </Context.Provider>
+            renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
             );
 
             const hamburgerButton = screen.getByLabelText('Toggle menu');
@@ -113,10 +106,8 @@ describe('Sidebar Component', () => {
         });
 
         test('toggles mobile menu when hamburger button is clicked', () => {
-            const {container} = render(
-                <Context.Provider value={mockContext as any}>
-                    <Sidebar navItems={mockNavItems} pref={defaultPrefs} onVersionClick={() => {}} />
-                </Context.Provider>
+            const {container} = renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
             );
 
             const hamburgerButton = screen.getByLabelText('Toggle menu');
@@ -136,8 +127,8 @@ describe('Sidebar Component', () => {
 
         test('closes mobile menu when overlay is clicked', () => {
             const {container} = render(
-                <Context.Provider value={mockContext as any}>
-                    <Sidebar navItems={mockNavItems} pref={defaultPrefs} onVersionClick={() => {}} />
+                <renderWithContext>
+                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
                 </Context.Provider>
             );
 
@@ -155,8 +146,8 @@ describe('Sidebar Component', () => {
 
         test('closes mobile menu when Escape key is pressed', () => {
             const {container} = render(
-                <Context.Provider value={mockContext as any}>
-                    <Sidebar navItems={mockNavItems} pref={defaultPrefs} onVersionClick={() => {}} />
+                <renderWithContext>
+                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
                 </Context.Provider>
             );
 
@@ -174,8 +165,8 @@ describe('Sidebar Component', () => {
 
         test('changes hamburger icon when menu is open', () => {
             render(
-                <Context.Provider value={mockContext as any}>
-                    <Sidebar navItems={mockNavItems} pref={defaultPrefs} onVersionClick={() => {}} />
+                <renderWithContext>
+                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
                 </Context.Provider>
             );
 
@@ -197,9 +188,9 @@ describe('Sidebar Component', () => {
         });
 
         test('mobile menu overrides hideSidebar preference', () => {
-            const collapsedPrefs = {...defaultPrefs, hideSidebar: true};
+            const collapsedPrefs = {...mockViewPreferences.default, hideSidebar: true};
             const {container} = render(
-                <Context.Provider value={mockContext as any}>
+                <renderWithContext>
                     <Sidebar navItems={mockNavItems} pref={collapsedPrefs} onVersionClick={() => {}} />
                 </Context.Provider>
             );
@@ -222,7 +213,7 @@ describe('Sidebar Component', () => {
 
     describe('Navigation Behavior', () => {
         test('closes mobile menu when navigation occurs', () => {
-            const mockContextWithNav = {
+            const mockRouterContextWithNav = {
                 history: {
                     location: {pathname: '/applications'},
                     push: jest.fn()
@@ -230,8 +221,8 @@ describe('Sidebar Component', () => {
             };
 
             const {container, rerender} = render(
-                <Context.Provider value={mockContextWithNav as any}>
-                    <Sidebar navItems={mockNavItems} pref={defaultPrefs} onVersionClick={() => {}} />
+                <Context.Provider value={mockRouterContextWithNav as any}>
+                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
                 </Context.Provider>
             );
 
@@ -243,10 +234,10 @@ describe('Sidebar Component', () => {
             expect(overlay).toHaveClass('sidebar-overlay--visible');
 
             // Simulate navigation by changing location
-            mockContextWithNav.history.location.pathname = '/settings';
+            mockRouterContextWithNav.history.location.pathname = '/settings';
             rerender(
-                <Context.Provider value={mockContextWithNav as any}>
-                    <Sidebar navItems={mockNavItems} pref={defaultPrefs} onVersionClick={() => {}} />
+                <Context.Provider value={mockRouterContextWithNav as any}>
+                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
                 </Context.Provider>
             );
 
@@ -256,8 +247,8 @@ describe('Sidebar Component', () => {
 
         test('highlights active navigation item', () => {
             const {container} = render(
-                <Context.Provider value={mockContext as any}>
-                    <Sidebar navItems={mockNavItems} pref={defaultPrefs} onVersionClick={() => {}} />
+                <renderWithContext>
+                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
                 </Context.Provider>
             );
 
@@ -273,8 +264,8 @@ describe('Sidebar Component', () => {
     describe('Accessibility', () => {
         test('hamburger button has aria-label', () => {
             render(
-                <Context.Provider value={mockContext as any}>
-                    <Sidebar navItems={mockNavItems} pref={defaultPrefs} onVersionClick={() => {}} />
+                <renderWithContext>
+                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
                 </Context.Provider>
             );
 
@@ -284,8 +275,8 @@ describe('Sidebar Component', () => {
 
         test('keyboard navigation works with Escape key', () => {
             const {container} = render(
-                <Context.Provider value={mockContext as any}>
-                    <Sidebar navItems={mockNavItems} pref={defaultPrefs} onVersionClick={() => {}} />
+                <renderWithContext>
+                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
                 </Context.Provider>
             );
 
