@@ -353,6 +353,115 @@ yarn test --onlyChanged
 
 ---
 
+## Playwright Visual Testing with mkcert
+
+For automated visual testing with Playwright, you can set up trusted SSL certificates using mkcert to avoid certificate warnings.
+
+### Prerequisites
+
+```bash
+# Install mkcert (macOS)
+brew install mkcert
+
+# Install local CA (requires sudo)
+mkcert -install
+
+# Generate certificates for localhost
+mkdir -p certs
+cd certs
+mkcert localhost 127.0.0.1 ::1
+```
+
+This creates:
+- `localhost+2.pem` - Certificate
+- `localhost+2-key.pem` - Private key
+
+### Configure ArgoCD with mkcert Certificates
+
+```bash
+# Create TLS secret in ArgoCD namespace
+kubectl -n argocd delete secret argocd-server-tls --ignore-not-found
+kubectl -n argocd create secret tls argocd-server-tls \
+  --cert=certs/localhost+2.pem \
+  --key=certs/localhost+2-key.pem
+
+# Restart ArgoCD server to pick up new certificate
+kubectl -n argocd rollout restart deployment argocd-server
+kubectl -n argocd rollout status deployment argocd-server
+```
+
+### Port Forwarding for Testing
+
+```bash
+# For HTTP access (TLS disabled in server)
+kubectl -n argocd port-forward svc/argocd-server 8080:80
+
+# For HTTPS access (if TLS enabled)
+kubectl -n argocd port-forward svc/argocd-server 8443:443
+```
+
+### Playwright Testing Examples
+
+```typescript
+// Navigate to ArgoCD
+await page.goto('http://localhost:8080');
+
+// Login
+await page.fill('input[name="username"]', 'admin');
+await page.fill('input[name="password"]', 'TestTest123');
+await page.click('button[type="submit"]');
+
+// Test mobile viewport (iPhone 14 Pro Max)
+await page.setViewportSize({ width: 430, height: 932 });
+
+// Take screenshot
+await page.screenshot({ path: 'mobile-view.png' });
+
+// Test filter dropdown z-index
+await page.click('.filter:has-text("CLUSTERS")');
+await page.screenshot({ path: 'clusters-filter.png' });
+```
+
+### Using Playwright MCP Tool
+
+If using Claude Code with Playwright MCP:
+
+```
+# Navigate to ArgoCD
+mcp__playwright__playwright_navigate url=http://localhost:8080
+
+# Login
+mcp__playwright__playwright_fill selector=input[name="username"] value=admin
+mcp__playwright__playwright_fill selector=input[name="password"] value=TestTest123
+mcp__playwright__playwright_click selector=button[type="submit"]
+
+# Take screenshot
+mcp__playwright__playwright_screenshot name=desktop-view width=1280 height=720
+
+# Mobile viewport (iPhone 14 Pro Max)
+# Note: Resize by navigating with new dimensions
+mcp__playwright__playwright_navigate url=http://localhost:8080/applications width=430 height=932
+mcp__playwright__playwright_screenshot name=mobile-view width=430 height=932
+```
+
+### Troubleshooting
+
+**Certificate errors in browser:**
+- Ensure mkcert CA is installed: `mkcert -install`
+- Check certificate was generated: `ls certs/`
+- Verify TLS secret exists: `kubectl -n argocd get secret argocd-server-tls`
+
+**Port forward connection issues:**
+- Kill existing port-forwards: `pkill -f "kubectl.*port-forward.*argocd"`
+- Check pod is running: `kubectl -n argocd get pods`
+- Check server logs: `kubectl -n argocd logs -l app.kubernetes.io/name=argocd-server`
+
+**ArgoCD running in HTTP mode:**
+- Check logs for "tls: false" - this means TLS is disabled at server level
+- Use port 80 for HTTP access instead of 443
+
+---
+
 **Last Updated**: 2025-12-27
 **Status**: Ready for Testing
 **Phase**: 1 - Core Mobile Support

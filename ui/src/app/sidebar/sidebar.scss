@@ -15,21 +15,51 @@ $deselected-text: #818d94;
     color: white;
     background-color: #0f2733;
     overflow: auto;
-    z-index: 1000; // Higher z-index for mobile overlay
+    z-index: 10000; // Very high z-index for mobile overlay
     transition: transform 0.3s ease-in-out;
 
-    // Mobile: sidebar is collapsed by default and shown as overlay
+    // Mobile: sidebar is hidden by default and shown as overlay when opened
     @media screen and (max-width: $mobile-breakpoint - 1px) {
         transform: translateX(-100%);
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+        width: 280px;
+        min-width: 280px;
+        padding: 0 16px;
 
-        &:not(.sidebar--collapsed) {
+        // Only show when explicitly opened via hamburger menu
+        &.sidebar--mobile-open {
             transform: translateX(0);
         }
     }
 
     &__container {
         padding: 0 5px;
+    }
+
+    // Mobile close button - only visible on mobile
+    &__mobile-close {
+        display: none;
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: none;
+        border: none;
+        color: $deselected-text;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 8px;
+        min-width: 44px;
+        min-height: 44px;
+
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        &:hover {
+            color: white;
+        }
     }
 
     &__logo-container {
@@ -177,19 +207,22 @@ $deselected-text: #818d94;
     }
 }
 
-// Mobile overlay backdrop
+// Mobile overlay backdrop - covers ALL content including fixed headers
 .sidebar-overlay {
     display: none;
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 999;
+    background-color: rgba(0, 0, 0, 0.75);
+    z-index: 9999; // Just below sidebar (10000), above all content
 
-    @media screen and (max-width: $mobile-breakpoint - 1px) {
-        &--visible {
+    &--visible {
+        // Only show on mobile
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
             display: block;
         }
     }
@@ -201,7 +234,7 @@ $deselected-text: #818d94;
     position: fixed;
     top: 16px;
     left: 16px;
-    z-index: 998;
+    z-index: 10001; // Higher than sidebar (10000) so it's always clickable
     background-color: #0f2733;
     color: white;
     border: none;
