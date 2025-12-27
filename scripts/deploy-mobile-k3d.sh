@@ -11,8 +11,8 @@ echo "==========================================="
 CLUSTER_NAME="${CLUSTER_NAME:-argocd-mobile-test}"
 IMAGE_NAME="${IMAGE_NAME:-argocd-mobile}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
-REGISTRY="${REGISTRY:-localhost:5000}"
-FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+FULL_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
+ARGOCD_PORT="${ARGOCD_PORT:-9080}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -51,10 +51,9 @@ if k3d cluster list | grep -q "${CLUSTER_NAME}"; then
 else
     echo "Creating k3d cluster: ${CLUSTER_NAME}"
     k3d cluster create "${CLUSTER_NAME}" \
-        --registry-create "${REGISTRY}" \
         --api-port 6550 \
-        --port "8080:80@loadbalancer" \
-        --port "8443:443@loadbalancer"
+        --port "${ARGOCD_PORT}:80@loadbalancer" \
+        --port "9443:443@loadbalancer"
 
     echo -e "${GREEN}✓ Cluster created${NC}"
 fi
@@ -92,6 +91,10 @@ kubectl patch deployment argocd-server -n argocd \
     \"op\": \"replace\",
     \"path\": \"/spec/template/spec/containers/0/image\",
     \"value\": \"${FULL_IMAGE}\"
+  },{
+    \"op\": \"replace\",
+    \"path\": \"/spec/template/spec/containers/0/imagePullPolicy\",
+    \"value\": \"Never\"
   }]"
 
 echo -e "${GREEN}✓ Deployment patched${NC}"
@@ -103,6 +106,10 @@ kubectl patch deployment argocd-repo-server -n argocd \
     \"op\": \"replace\",
     \"path\": \"/spec/template/spec/containers/0/image\",
     \"value\": \"${FULL_IMAGE}\"
+  },{
+    \"op\": \"replace\",
+    \"path\": \"/spec/template/spec/containers/0/imagePullPolicy\",
+    \"value\": \"Never\"
   }]" || echo "Repo server patch optional"
 
 # Step 7: Wait for rollout
@@ -117,10 +124,10 @@ ADMIN_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jso
 echo -e "\n${GREEN}Step 9: Setting up port forwarding...${NC}"
 echo "Starting port-forward in background..."
 
-# Kill any existing port-forward on 8080
-lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+# Kill any existing port-forward on the target port
+lsof -ti:${ARGOCD_PORT} | xargs kill -9 2>/dev/null || true
 
-kubectl port-forward svc/argocd-server -n argocd 8080:443 > /dev/null 2>&1 &
+kubectl port-forward svc/argocd-server -n argocd ${ARGOCD_PORT}:443 > /dev/null 2>&1 &
 PORT_FORWARD_PID=$!
 
 # Wait for port-forward to be ready
@@ -132,7 +139,7 @@ echo "✅ ArgoCD Mobile UI Deployed Successfully!"
 echo "==========================================${NC}"
 echo ""
 echo "📱 Access ArgoCD:"
-echo "   URL: https://localhost:8080"
+echo "   URL: https://localhost:${ARGOCD_PORT}"
 echo "   Username: admin"
 echo "   Password: ${ADMIN_PASSWORD}"
 echo ""
@@ -150,7 +157,7 @@ echo "   # Delete cluster when done"
 echo "   k3d cluster delete ${CLUSTER_NAME}"
 echo ""
 echo "📱 Mobile Testing:"
-echo "   1. Open https://localhost:8080 in Chrome"
+echo "   1. Open https://localhost:${ARGOCD_PORT} in Chrome"
 echo "   2. Press F12 → Ctrl+Shift+M (device mode)"
 echo "   3. Select 'iPhone 12 Pro'"
 echo "   4. Login and test mobile features!"

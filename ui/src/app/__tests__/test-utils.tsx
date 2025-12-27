@@ -13,16 +13,8 @@ import {mockRouterContext, mockVersion} from './mock-data';
 /**
  * Custom render function that wraps components with necessary providers
  */
-export function renderWithContext(
-    ui: React.ReactElement,
-    {
-        context = mockRouterContext,
-        ...renderOptions
-    }: {context?: any} & Omit<RenderOptions, 'wrapper'> = {}
-) {
-    const Wrapper = ({children}: {children: React.ReactNode}) => (
-        <Context.Provider value={context}>{children}</Context.Provider>
-    );
+export function renderWithContext(ui: React.ReactElement, {context = mockRouterContext, ...renderOptions}: {context?: any} & Omit<RenderOptions, 'wrapper'> = {}) {
+    const Wrapper = ({children}: {children: React.ReactNode}) => <Context.Provider value={context}>{children}</Context.Provider>;
 
     return render(ui, {wrapper: Wrapper, ...renderOptions});
 }
@@ -151,20 +143,22 @@ export function simulateTouch(element: Element, type: 'touchstart' | 'touchend' 
     const touchEvent = new TouchEvent(type, {
         bubbles: true,
         cancelable: true,
-        touches: [{
-            identifier: Date.now(),
-            target: element,
-            clientX: 0,
-            clientY: 0,
-            screenX: 0,
-            screenY: 0,
-            pageX: 0,
-            pageY: 0,
-            radiusX: 0,
-            radiusY: 0,
-            rotationAngle: 0,
-            force: 1
-        }] as any
+        touches: [
+            {
+                identifier: Date.now(),
+                target: element,
+                clientX: 0,
+                clientY: 0,
+                screenX: 0,
+                screenY: 0,
+                pageX: 0,
+                pageY: 0,
+                radiusX: 0,
+                radiusY: 0,
+                rotationAngle: 0,
+                force: 1
+            }
+        ] as any
     });
 
     element.dispatchEvent(touchEvent);
@@ -183,11 +177,7 @@ export function isTouchFriendly(element: HTMLElement): boolean {
 /**
  * Viewport test helper - runs test at specific viewport
  */
-export function testAtViewport(
-    viewportName: string,
-    viewport: {width: number; height: number},
-    testFn: () => void | Promise<void>
-) {
+export function testAtViewport(viewportName: string, viewport: {width: number; height: number}, testFn: () => void | Promise<void>) {
     return () => {
         setViewportSize(viewport.width, viewport.height);
         return testFn();

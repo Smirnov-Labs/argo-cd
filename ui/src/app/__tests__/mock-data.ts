@@ -15,7 +15,7 @@ export const mockApplications = {
      * Create a mock application with customizable properties
      */
     createApplication(overrides?: Partial<models.Application>): models.Application {
-        const defaultApp: models.Application = {
+        const defaultApp = {
             metadata: {
                 name: 'guestbook',
                 namespace: 'argocd',
@@ -32,6 +32,7 @@ export const mockApplications = {
                     path: 'guestbook',
                     targetRevision: 'HEAD'
                 },
+                sources: [],
                 destination: {
                     server: 'https://kubernetes.default.svc',
                     namespace: 'default'
@@ -55,7 +56,7 @@ export const mockApplications = {
                 resources: [],
                 summary: {}
             }
-        } as models.Application;
+        } as unknown as models.Application;
 
         return {...defaultApp, ...overrides} as models.Application;
     },
@@ -72,48 +73,53 @@ export const mockApplications = {
             const healthStatus = healthStatuses[i % healthStatuses.length];
             const syncStatus = syncStatuses[i % syncStatuses.length];
 
-            apps.push(this.createApplication({
-                metadata: {
-                    name: `app-${i + 1}`,
-                    namespace: 'argocd',
-                    creationTimestamp: new Date(Date.now() - i * 86400000).toISOString(),
-                    labels: {
-                        'app.kubernetes.io/instance': `app-${i + 1}`,
-                        'env': i % 2 === 0 ? 'production' : 'staging'
+            apps.push(
+                this.createApplication({
+                    metadata: {
+                        name: `app-${i + 1}`,
+                        namespace: 'argocd',
+                        creationTimestamp: new Date(Date.now() - i * 86400000).toISOString(),
+                        labels: {
+                            'app.kubernetes.io/instance': `app-${i + 1}`,
+                            'env': i % 2 === 0 ? 'production' : 'staging'
+                        },
+                        annotations: {}
                     },
-                    annotations: {}
-                },
-                spec: {
-                    project: i % 3 === 0 ? 'default' : 'team-alpha',
-                    source: {
-                        repoURL: `https://github.com/example/app-${i + 1}`,
-                        path: i % 2 === 0 ? 'helm' : 'kustomize',
-                        targetRevision: 'main'
+                    spec: {
+                        project: i % 3 === 0 ? 'default' : 'team-alpha',
+                        source: {
+                            repoURL: `https://github.com/example/app-${i + 1}`,
+                            path: i % 2 === 0 ? 'helm' : 'kustomize',
+                            targetRevision: 'main'
+                        },
+                        destination: {
+                            server: 'https://kubernetes.default.svc',
+                            namespace: `namespace-${i + 1}`
+                        },
+                        syncPolicy: {
+                            automated:
+                                i % 2 === 0
+                                    ? {
+                                          prune: true,
+                                          selfHeal: true
+                                      }
+                                    : undefined
+                        }
                     },
-                    destination: {
-                        server: 'https://kubernetes.default.svc',
-                        namespace: `namespace-${i + 1}`
-                    },
-                    syncPolicy: {
-                        automated: i % 2 === 0 ? {
-                            prune: true,
-                            selfHeal: true
-                        } : undefined
+                    status: {
+                        sync: {
+                            status: syncStatus as any,
+                            revision: `revision-${i}`
+                        },
+                        health: {
+                            status: healthStatus as any
+                        },
+                        operationState: undefined,
+                        resources: [],
+                        summary: {}
                     }
-                },
-                status: {
-                    sync: {
-                        status: syncStatus as any,
-                        revision: `revision-${i}`
-                    },
-                    health: {
-                        status: healthStatus as any
-                    },
-                    operationState: undefined,
-                    resources: [],
-                    summary: {}
-                }
-            } as any));
+                } as any)
+            );
         }
 
         return apps;
@@ -210,12 +216,12 @@ export const mockViewPreferences = {
         theme: 'light',
         appList: {
             view: 'tiles' as const,
-            projectsFilter: [],
-            clustersFilter: [],
-            namespacesFilter: [],
-            labelsFilter: [],
-            sync: [],
-            health: []
+            projectsFilter: [] as string[],
+            clustersFilter: [] as string[],
+            namespacesFilter: [] as string[],
+            labelsFilter: [] as string[],
+            sync: [] as string[],
+            health: [] as string[]
         }
     },
     sidebarCollapsed: {
@@ -223,12 +229,12 @@ export const mockViewPreferences = {
         theme: 'light',
         appList: {
             view: 'tiles' as const,
-            projectsFilter: [],
-            clustersFilter: [],
-            namespacesFilter: [],
-            labelsFilter: [],
-            sync: [],
-            health: []
+            projectsFilter: [] as string[],
+            clustersFilter: [] as string[],
+            namespacesFilter: [] as string[],
+            labelsFilter: [] as string[],
+            sync: [] as string[],
+            health: [] as string[]
         }
     },
     darkMode: {
@@ -236,12 +242,12 @@ export const mockViewPreferences = {
         theme: 'dark',
         appList: {
             view: 'tiles' as const,
-            projectsFilter: [],
-            clustersFilter: [],
-            namespacesFilter: [],
-            labelsFilter: [],
-            sync: [],
-            health: []
+            projectsFilter: [] as string[],
+            clustersFilter: [] as string[],
+            namespacesFilter: [] as string[],
+            labelsFilter: [] as string[],
+            sync: [] as string[],
+            health: [] as string[]
         }
     }
 };
@@ -267,7 +273,7 @@ export const mockRouterContext = {
             pathname: '/applications',
             search: '',
             hash: '',
-            state: undefined
+            state: undefined as unknown
         },
         push: jest.fn(),
         replace: jest.fn(),
@@ -282,7 +288,7 @@ export const mockRouterContext = {
         pathname: '/applications',
         search: '',
         hash: '',
-        state: undefined
+        state: undefined as unknown
     },
     match: {
         params: {},
