@@ -5,6 +5,12 @@
 .page-wrapper {
     width: 100%;
     padding-left: $sidebar-width;
+
+    // On mobile, remove sidebar padding since sidebar is overlay
+    @media screen and (max-width: $mobile-breakpoint - 1px) {
+        padding-left: 0;
+    }
+
     .page {
         @media (max-width: map-get($breakpoints, medium)) {
             &--has-toolbar {
@@ -44,6 +50,12 @@
         &__top-bar {
             height: $single-toolbar-height;
             left: $sidebar-width;
+
+            // On mobile, align to left edge with space for hamburger menu
+            @media screen and (max-width: $mobile-breakpoint - 1px) {
+                left: 0;
+                padding-left: 60px; // Space for hamburger button
+            }
         }
     }
 }
@@ -77,20 +89,45 @@
 .sb-page-wrapper {
     padding-left: $sidebar-width;
 
+    // On mobile, no sidebar padding since sidebar is overlay
+    @media screen and (max-width: $mobile-breakpoint - 1px) {
+        padding-left: 0;
+    }
+
     &__sidebar-collapsed {
         padding-left: $collapsed-sidebar-width;
+
+        // On mobile, collapsed means hidden (overlay mode)
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            padding-left: 0;
+        }
+
         .flex-top-bar {
             left: $collapsed-sidebar-width;
+
+            @media screen and (max-width: $mobile-breakpoint - 1px) {
+                left: 0;
+                padding-left: 60px;
+            }
         }
 
         .page {
             &__top-bar {
                 left: $collapsed-sidebar-width !important;
+
+                @media screen and (max-width: $mobile-breakpoint - 1px) {
+                    left: 0 !important;
+                    padding-left: 60px;
+                }
             }
         }
 
         .application-details__status-panel {
             left: $collapsed-sidebar-width;
+
+            @media screen and (max-width: $mobile-breakpoint - 1px) {
+                left: 0;
+            }
         }
     }
 }

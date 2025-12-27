@@ -9,6 +9,13 @@
     left: $sidebar-width;
     align-items: center;
     flex-wrap: wrap;
+
+    // On mobile, adjust for no sidebar and hamburger menu
+    @media screen and (max-width: $mobile-breakpoint - 1px) {
+        left: 0;
+        padding-left: 60px; // Space for hamburger button
+        padding-right: 8px;
+    }
     &__actions {
         display: flex;
         align-items: center;
@@ -34,6 +41,9 @@
         height: 50px;
         @include breakpoint(medium down) {
             height: 150px;
+        }
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            height: 180px; // Extra space for mobile layout
         }
     }
 }

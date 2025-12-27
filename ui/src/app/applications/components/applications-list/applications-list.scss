@@ -7,6 +7,10 @@
     @media screen and (max-width: 1024px) {
         padding: 0;
     }
+    @media screen and (max-width: $mobile-breakpoint - 1px) {
+        padding: 0.5em;
+        padding-top: 60px; // Space for hamburger menu
+    }
     min-height: 88vh;
     &__title {
         font-weight: bolder;
@@ -114,6 +118,11 @@
             flex-basis: 100%;
             margin-left: 0;
         }
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            margin-left: 0;
+            margin-bottom: 8px;
+            width: 100%;
+        }
         line-height: normal;
     }
 
@@ -132,6 +141,11 @@
         @include breakpoint(large up) {
             flex-shrink: 1;
             width: 300px;
+        }
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            width: 100%;
+            min-height: 44px; // Touch-friendly height
+            height: 44px;
         }
         i {
             font-size: 12px;

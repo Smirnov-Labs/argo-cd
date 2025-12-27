@@ -15,6 +15,14 @@
     @include themify($themes) {
         background-color: themed('background-1');
     }
+
+    // On mobile, content takes full width since sidebar is overlay
+    @media screen and (max-width: $mobile-breakpoint - 1px) {
+        .cd-layout__content {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+    }
     &__loader {
         @include themify($themes) {
             background-color: themed('layout-loader-bg');
