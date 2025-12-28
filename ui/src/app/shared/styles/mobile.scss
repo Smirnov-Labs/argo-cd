@@ -113,6 +113,11 @@
         max-height: 100vh;
     }
 
+    // Sliding panel needs higher z-index than fixed header when open
+    .sliding-panel--opened {
+        z-index: 200 !important;
+    }
+
     // Make sliding panel full width on mobile
     .sliding-panel__wrapper {
         width: 100% !important;
@@ -275,134 +280,310 @@
         margin-left: 0 !important;
     }
 
-    // Fix the page top-bar on mobile (used in application details)
+    // ==========================================================================
+    // APPLICATION DETAILS - OPTIMIZED MOBILE LAYOUT
+    // Goal: Maximize tree view content, minimize header/toolbar chrome
+    // ==========================================================================
+
+    // Compact page top-bar: 48px header with breadcrumbs only
     .page__top-bar {
         position: fixed !important;
         top: 0;
         left: 0 !important;
         right: 0;
-        height: auto !important; // Allow expansion to fit content
-        max-height: 50vh; // Don't let it take more than half the screen
-        overflow-y: auto;
+        height: 48px !important;
+        min-height: 48px !important;
+        max-height: 48px !important;
+        overflow: hidden !important;
         z-index: 100;
-        padding-left: 60px; // Space for hamburger
+        padding: 0 8px 0 52px !important;
+        display: flex !important;
+        align-items: center !important;
+        background: inherit;
     }
 
     .page__top-bar .top-bar {
         position: relative !important;
-        padding: 8px !important;
-        padding-left: 60px !important; // Space for hamburger
+        padding: 0 !important;
         margin: 0 !important;
+        height: 48px !important;
+        display: flex !important;
+        align-items: center !important;
+        width: 100%;
 
-        // The inner row needs to stack vertically
+        // Hide the title row completely on mobile
+        &:first-child {
+            .top-bar__title {
+                display: none !important;
+            }
+        }
+
+        // Breadcrumbs compact
+        .top-bar__breadcrumbs {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.85em;
+            line-height: 48px;
+        }
+
+        // Hide action buttons from header - they go to bottom bar
+        .top-bar__left-side > div > .argo-button,
+        .top-bar__left-side > div > button:not(.argo-dropdown__anchor) {
+            display: none !important;
+        }
+
+        // Hide secondary toolbar (refresh, view toggles, log out)
+        .top-bar__right-side {
+            display: none !important;
+        }
+
+        // Flatten the row structure
         &.row,
         > .row {
             display: flex !important;
-            flex-direction: column !important;
-            width: 100% !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            height: 48px !important;
             margin: 0 !important;
         }
 
-        .top-bar__left-side,
-        .top-bar__right-side {
-            width: 100% !important;
-            max-width: 100% !important;
-            flex: 0 0 100% !important;
-            padding: 0 !important;
-            float: none !important;
+        .top-bar__left-side {
+            flex: 1;
+            overflow: hidden;
+        }
+    }
+
+    // Hide the second top-bar (action buttons row) completely
+    .page__top-bar .top-bar.row:nth-child(2),
+    .page__top-bar > .top-bar:nth-child(2) {
+        display: none !important;
+    }
+
+    // Application details optimized layout
+    .application-details {
+        // Wrapper starts just below compact header
+        &__wrapper {
+            margin-top: 48px !important;
+            height: calc(100vh - 48px) !important;
+            padding-bottom: 70px; // Space for bottom action bar
         }
 
-        .top-bar__left-side {
-            margin-bottom: 8px;
+        // Compact status panel - single line, expandable
+        &__status-panel,
+        .application-status-panel {
+            position: relative;
+            height: 44px !important;
+            min-height: 44px;
+            max-height: 44px;
+            overflow: hidden;
+            padding: 0 8px !important;
+            margin: 0 !important;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 12px;
+            transition: max-height 0.3s ease;
 
-            > div {
-                display: flex !important;
-                flex-wrap: wrap;
-                gap: 4px;
-                justify-content: flex-start;
+            // Expand on tap (via :focus-within or JS toggle)
+            &:focus-within,
+            &.mobile-expanded {
+                height: auto !important;
+                max-height: 70vh !important;
+                overflow-y: auto;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                padding: 8px !important;
+            }
+
+            // Status items - horizontal compact
+            .application-status-panel__item {
+                flex: 0 0 auto;
+                padding: 4px 8px !important;
+                margin: 0 !important;
+                border: none !important;
+                display: flex;
                 align-items: center;
+                gap: 4px;
 
-                .argo-button {
-                    padding: 6px 10px !important;
-                    font-size: 12px !important;
-                    min-width: auto !important;
-                    height: auto !important;
+                // Hide labels in compact mode
+                label {
+                    display: none;
+                }
+
+                // Compact value
+                .application-status-panel__item-value {
+                    font-size: 1.2em !important;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                // Hide detail rows in compact mode
+                .application-status-panel__item__row,
+                .application-status-panel__item-name {
+                    display: none;
+                }
+            }
+
+            // Show only first 2 items (health + sync) in compact mode
+            .application-status-panel__item:nth-child(n+3) {
+                display: none;
+            }
+
+            // Expanded mode - show all
+            &:focus-within,
+            &.mobile-expanded {
+                .application-status-panel__item {
+                    width: 100%;
+                    padding: 12px 8px !important;
+                    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+                    flex-direction: column;
+                    align-items: flex-start;
+
+                    label {
+                        display: block;
+                        margin-bottom: 4px;
+                    }
+
+                    .application-status-panel__item-value {
+                        font-size: 1.5em !important;
+                    }
+
+                    .application-status-panel__item__row,
+                    .application-status-panel__item-name {
+                        display: flex;
+                    }
+                }
+
+                .application-status-panel__item:nth-child(n+3) {
+                    display: flex;
                 }
             }
         }
 
-        .top-bar__right-side {
-            display: flex !important;
-            flex-wrap: wrap;
-            gap: 4px;
-            justify-content: flex-start !important;
-        }
-    }
+        // Tree container - maximize space
+        &__tree {
+            padding: 4px !important;
+            height: calc(100% - 44px) !important; // Full height minus status bar
 
-    // Fix application details page layout
-    .application-details {
-        &__wrapper {
-            margin-top: 260px; // Space for mobile toolbar (breadcrumbs + action buttons)
-            height: calc(100vh - 260px) !important;
-        }
+            // Graph controls - move to floating position
+            .graph-options-panel {
+                position: fixed !important;
+                bottom: 80px;
+                left: 8px;
+                right: auto;
+                top: auto !important;
+                margin: 0;
+                padding: 6px 10px;
+                border-radius: 24px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                z-index: 50;
+                display: flex;
+                flex-direction: row;
+                gap: 4px;
+                background: #fff;
 
-        // Status panel - stack items vertically and make scrollable
-        .application-status-panel {
-            flex-direction: column;
-            overflow-x: auto;
-            padding: 8px;
+                a {
+                    padding: 8px;
+                    margin: 0;
+                }
 
-            &__item {
-                width: 100%;
-                min-width: auto;
-                border-right: none;
-                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-                padding: 8px;
-                flex-shrink: 0;
+                // Hide zoom percentage text
+                span:not(.fa):not([class*="fa-"]) {
+                    display: none;
+                }
             }
         }
-
-        // Fix tree container
-        &__tree {
-            padding: 8px !important;
-        }
     }
 
-    // Fix flex-top-bar on application details
-    // Keep position:fixed but adjust left/padding for mobile
-    .flex-top-bar {
-        // left and padding are set in flex-top-bar.scss with media queries
-        flex-wrap: wrap;
-        gap: 4px;
+    // Bottom action bar for app details
+    .application-details .flex-top-bar,
+    .application-details .page__top-bar ~ .flex-top-bar {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        height: 60px !important;
+        padding: 8px 12px !important;
+        margin: 0 !important;
+        z-index: 100;
+        display: flex !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        background: inherit;
 
         &__actions {
-            display: flex;
-            flex-wrap: wrap;
+            display: flex !important;
+            justify-content: space-around !important;
+            width: 100%;
             gap: 4px;
-            justify-content: flex-start;
-            height: auto !important;
 
-            // Make buttons smaller on mobile
             .argo-button {
-                padding: 6px 10px;
-                font-size: 12px;
+                flex: 1;
+                max-width: 60px;
+                height: 44px;
+                padding: 4px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 10px !important;
+                border-radius: 8px;
 
-                &--base-o {
-                    min-width: auto;
+                i {
+                    font-size: 1.2em;
+                    margin: 0 0 2px 0 !important;
+                }
+
+                // Hide button text labels
+                span.show-for-large,
+                .argo-button__text {
+                    display: none !important;
                 }
             }
         }
 
         &__tools {
-            flex-wrap: wrap;
-            gap: 4px;
+            display: none !important; // Hide view toggles for now - accessible via tree controls
+        }
+
+        &__padder {
+            display: none !important;
         }
     }
 
-    // Fix top-bar (different component) - keep fixed positioning
-    .top-bar {
-        // left and padding handled in page.scss with media queries
+    // View type selector - floating pill
+    .application-details__view-type,
+    .application-resource-list__view-type {
+        position: fixed !important;
+        bottom: 80px;
+        right: 8px;
+        left: auto !important;
+        top: auto !important;
+        margin: 0 !important;
+        padding: 6px 12px;
+        border-radius: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        background: #fff;
+        z-index: 50;
+        display: flex !important;
+        gap: 8px;
 
+        i {
+            padding: 6px;
+            border-radius: 50%;
+
+            &.selected {
+                background: #0dadea; // teal-5
+                color: #fff;
+            }
+        }
+    }
+
+    // Generic top-bar fixes for other pages
+    .top-bar {
         &__left-side,
         &__right-side {
             width: 100% !important;
