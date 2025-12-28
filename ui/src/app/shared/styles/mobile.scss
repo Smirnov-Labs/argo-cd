@@ -281,12 +281,12 @@
     }
 
     // ==========================================================================
-    // APPLICATION DETAILS - OPTIMIZED MOBILE LAYOUT
-    // Goal: Maximize tree view content, minimize header/toolbar chrome
+    // APPLICATION DETAILS - MOBILE-FIRST REDESIGN
+    // Primary use cases: Status monitoring, Sync/Rollback, Debugging
     // ==========================================================================
 
-    // Compact page top-bar: 48px header with breadcrumbs only
-    .page__top-bar {
+    // Header: Compact 48px with breadcrumbs only
+    .application-details .page__top-bar {
         position: fixed !important;
         top: 0;
         left: 0 !important;
@@ -297,293 +297,329 @@
         overflow: hidden !important;
         z-index: 100;
         padding: 0 8px 0 52px !important;
-        display: flex !important;
-        align-items: center !important;
-        background: inherit;
-    }
 
-    .page__top-bar .top-bar {
-        position: relative !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        height: 48px !important;
-        display: flex !important;
-        align-items: center !important;
-        width: 100%;
+        // First row: breadcrumbs only
+        .top-bar:first-child {
+            height: 48px !important;
+            padding: 0 !important;
+            margin: 0 !important;
 
-        // Hide the title row completely on mobile
-        &:first-child {
             .top-bar__title {
+                display: none !important;
+            }
+
+            .top-bar__breadcrumbs {
+                font-size: 14px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .top-bar__right-side {
                 display: none !important;
             }
         }
 
-        // Breadcrumbs compact
-        .top-bar__breadcrumbs {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 0.85em;
-            line-height: 48px;
-        }
-
-        // Hide action buttons from header - they go to bottom bar
-        .top-bar__left-side > div > .argo-button,
-        .top-bar__left-side > div > button:not(.argo-dropdown__anchor) {
-            display: none !important;
-        }
-
-        // Hide secondary toolbar (refresh, view toggles, log out)
-        .top-bar__right-side {
-            display: none !important;
-        }
-
-        // Flatten the row structure
-        &.row,
-        > .row {
+        // Second row: action buttons - MOVE TO BOTTOM
+        .top-bar:nth-child(2),
+        .top-bar.row:nth-child(2) {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            top: auto !important;
+            height: 70px !important;
+            padding: 8px !important;
+            margin: 0 !important;
+            z-index: 100;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
             display: flex !important;
             flex-direction: row !important;
             align-items: center !important;
-            height: 48px !important;
-            margin: 0 !important;
-        }
+            justify-content: center !important;
 
-        .top-bar__left-side {
-            flex: 1;
-            overflow: hidden;
-        }
-    }
+            // Make buttons row layout
+            .top-bar__left-side {
+                width: 100% !important;
+                max-width: 100% !important;
+                flex: 1 !important;
+                display: flex !important;
+                justify-content: center !important;
 
-    // Hide the second top-bar (action buttons row) completely
-    .page__top-bar .top-bar.row:nth-child(2),
-    .page__top-bar > .top-bar:nth-child(2) {
-        display: none !important;
-    }
-
-    // Application details optimized layout
-    .application-details {
-        // Wrapper starts just below compact header
-        &__wrapper {
-            margin-top: 48px !important;
-            height: calc(100vh - 48px) !important;
-            padding-bottom: 70px; // Space for bottom action bar
-        }
-
-        // Compact status panel - single line, expandable
-        &__status-panel,
-        .application-status-panel {
-            position: relative;
-            height: 44px !important;
-            min-height: 44px;
-            max-height: 44px;
-            overflow: hidden;
-            padding: 0 8px !important;
-            margin: 0 !important;
-            display: flex !important;
-            flex-direction: row !important;
-            align-items: center !important;
-            gap: 12px;
-            transition: max-height 0.3s ease;
-
-            // Expand on tap (via :focus-within or JS toggle)
-            &:focus-within,
-            &.mobile-expanded {
-                height: auto !important;
-                max-height: 70vh !important;
-                overflow-y: auto;
-                flex-direction: column !important;
-                align-items: stretch !important;
-                padding: 8px !important;
-            }
-
-            // Status items - horizontal compact
-            .application-status-panel__item {
-                flex: 0 0 auto;
-                padding: 4px 8px !important;
-                margin: 0 !important;
-                border: none !important;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-
-                // Hide labels in compact mode
-                label {
-                    display: none;
-                }
-
-                // Compact value
-                .application-status-panel__item-value {
-                    font-size: 1.2em !important;
-                    margin: 0;
-                    padding: 0;
-                }
-
-                // Hide detail rows in compact mode
-                .application-status-panel__item__row,
-                .application-status-panel__item-name {
-                    display: none;
+                > div {
+                    display: flex !important;
+                    flex-wrap: wrap !important;
+                    justify-content: space-around !important;
+                    width: 100% !important;
+                    gap: 4px;
                 }
             }
 
-            // Show only first 2 items (health + sync) in compact mode
-            .application-status-panel__item:nth-child(n+3) {
-                display: none;
-            }
-
-            // Expanded mode - show all
-            &:focus-within,
-            &.mobile-expanded {
-                .application-status-panel__item {
-                    width: 100%;
-                    padding: 12px 8px !important;
-                    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
-                    flex-direction: column;
-                    align-items: flex-start;
-
-                    label {
-                        display: block;
-                        margin-bottom: 4px;
-                    }
-
-                    .application-status-panel__item-value {
-                        font-size: 1.5em !important;
-                    }
-
-                    .application-status-panel__item__row,
-                    .application-status-panel__item-name {
-                        display: flex;
-                    }
-                }
-
-                .application-status-panel__item:nth-child(n+3) {
-                    display: flex;
-                }
-            }
-        }
-
-        // Tree container - maximize space
-        &__tree {
-            padding: 4px !important;
-            height: calc(100% - 44px) !important; // Full height minus status bar
-
-            // Graph controls - move to floating position
-            .graph-options-panel {
-                position: fixed !important;
-                bottom: 80px;
-                left: 8px;
-                right: auto;
-                top: auto !important;
-                margin: 0;
-                padding: 6px 10px;
-                border-radius: 24px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-                z-index: 50;
-                display: flex;
-                flex-direction: row;
-                gap: 4px;
-                background: #fff;
-
-                a {
-                    padding: 8px;
-                    margin: 0;
-                }
-
-                // Hide zoom percentage text
-                span:not(.fa):not([class*="fa-"]) {
-                    display: none;
-                }
-            }
-        }
-    }
-
-    // Bottom action bar for app details
-    .application-details .flex-top-bar,
-    .application-details .page__top-bar ~ .flex-top-bar {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        top: auto !important;
-        height: 60px !important;
-        padding: 8px 12px !important;
-        margin: 0 !important;
-        z-index: 100;
-        display: flex !important;
-        justify-content: space-around !important;
-        align-items: center !important;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        background: inherit;
-
-        &__actions {
-            display: flex !important;
-            justify-content: space-around !important;
-            width: 100%;
-            gap: 4px;
-
+            // Style action buttons for mobile
             .argo-button {
-                flex: 1;
-                max-width: 60px;
-                height: 44px;
-                padding: 4px !important;
+                flex: 1 1 auto !important;
+                max-width: 70px !important;
+                min-width: 56px !important;
+                height: 52px !important;
+                padding: 6px 4px !important;
+                margin: 0 2px !important;
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
                 justify-content: center !important;
-                font-size: 10px !important;
-                border-radius: 8px;
+                border-radius: 8px !important;
+                font-size: 9px !important;
+                text-transform: uppercase;
 
                 i {
-                    font-size: 1.2em;
-                    margin: 0 0 2px 0 !important;
+                    font-size: 18px !important;
+                    margin: 0 0 4px 0 !important;
                 }
 
-                // Hide button text labels
-                span.show-for-large,
-                .argo-button__text {
-                    display: none !important;
+                // Show short labels on mobile
+                span.show-for-large {
+                    display: block !important;
+                    font-size: 9px !important;
+                    line-height: 1.2;
+                    text-align: center;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    max-width: 60px;
                 }
             }
-        }
 
-        &__tools {
-            display: none !important; // Hide view toggles for now - accessible via tree controls
-        }
-
-        &__padder {
-            display: none !important;
-        }
-    }
-
-    // View type selector - floating pill
-    .application-details__view-type,
-    .application-resource-list__view-type {
-        position: fixed !important;
-        bottom: 80px;
-        right: 8px;
-        left: auto !important;
-        top: auto !important;
-        margin: 0 !important;
-        padding: 6px 12px;
-        border-radius: 24px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        background: #fff;
-        z-index: 50;
-        display: flex !important;
-        gap: 8px;
-
-        i {
-            padding: 6px;
-            border-radius: 50%;
-
-            &.selected {
-                background: #0dadea; // teal-5
-                color: #fff;
+            // Hide right side in bottom bar
+            .top-bar__right-side {
+                display: none !important;
             }
         }
     }
 
-    // Generic top-bar fixes for other pages
-    .top-bar {
+    // Application details wrapper
+    .application-details {
+        &__wrapper {
+            margin-top: 48px !important;
+            padding-bottom: 80px !important; // Space for bottom action bar
+            min-height: calc(100vh - 48px);
+        }
+
+        // Status panel: Compact but READABLE, tap to expand
+        &__status-panel {
+            .application-status-panel {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: wrap !important;
+                padding: 8px 12px !important;
+                margin: 0 !important;
+                gap: 8px;
+                cursor: pointer;
+                min-height: 56px;
+
+                // Each status item
+                .application-status-panel__item {
+                    flex: 1 1 45% !important;
+                    min-width: 140px;
+                    padding: 8px !important;
+                    margin: 0 !important;
+                    border-radius: 8px;
+
+                    label {
+                        font-size: 10px !important;
+                        text-transform: uppercase;
+                        opacity: 0.7;
+                        margin-bottom: 2px;
+                    }
+
+                    .application-status-panel__item-value {
+                        font-size: 16px !important;
+                        font-weight: 600;
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+
+                        i {
+                            font-size: 18px;
+                        }
+                    }
+
+                    // Hide extra details by default
+                    .application-status-panel__item-name,
+                    .application-status-panel__item__row {
+                        display: none;
+                    }
+
+                    // More button
+                    &.application-status-panel__item--more {
+                        flex: 0 0 auto !important;
+                        min-width: auto;
+                        padding: 8px 12px !important;
+                        cursor: pointer;
+                    }
+                }
+
+                // When expanded (via JS class toggle)
+                &.mobile-expanded {
+                    flex-direction: column !important;
+                    max-height: 70vh;
+                    overflow-y: auto;
+
+                    .application-status-panel__item {
+                        flex: 0 0 auto !important;
+                        width: 100% !important;
+                        padding: 12px !important;
+                        border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+
+                        .application-status-panel__item-name,
+                        .application-status-panel__item__row {
+                            display: flex;
+                            margin-top: 8px;
+                            font-size: 12px;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Tree view area
+        &__tree {
+            padding: 8px !important;
+            min-height: calc(100vh - 48px - 80px - 100px); // header - bottom bar - status
+
+            // Floating graph controls (zoom, etc)
+            .graph-options-panel {
+                position: fixed !important;
+                bottom: 90px !important;
+                left: 12px !important;
+                right: auto !important;
+                top: auto !important;
+                margin: 0 !important;
+                padding: 8px 12px;
+                border-radius: 24px;
+                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+                background: #fff;
+                z-index: 90;
+                display: flex;
+                flex-direction: row;
+                gap: 8px;
+
+                a {
+                    @include touch-target;
+                    padding: 8px;
+                    margin: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                // Hide zoom percentage
+                span:not([class]) {
+                    display: none;
+                }
+            }
+        }
+
+        // View type selector: Floating pill (Tree, Pods, Network, List)
+        &__view-type {
+            position: fixed !important;
+            bottom: 90px !important;
+            right: 12px !important;
+            left: auto !important;
+            top: auto !important;
+            margin: 0 !important;
+            padding: 8px 12px;
+            border-radius: 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+            background: #fff;
+            z-index: 90;
+            display: flex !important;
+            gap: 4px;
+
+            i {
+                @include touch-target;
+                padding: 8px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+
+                &.selected {
+                    background: #0dadea;
+                    color: #fff;
+                }
+            }
+        }
+    }
+
+    // Resource details sliding panel: Full screen on mobile
+    .sliding-panel--opened {
+        .sliding-panel__wrapper {
+            width: 100vw !important;
+            max-width: 100vw !important;
+        }
+
+        .sliding-panel__header {
+            padding: 12px 16px !important;
+
+            h4 {
+                font-size: 16px;
+            }
+        }
+
+        .sliding-panel__body {
+            padding: 16px !important;
+            padding-bottom: 100px !important; // Safe area
+        }
+    }
+
+    // Resource details page styling
+    .resource-details {
+        &__header {
+            flex-wrap: wrap;
+
+            .resource-details__header__title {
+                flex: 1 1 100%;
+                margin-bottom: 12px;
+
+                h1 {
+                    font-size: 18px;
+                    word-break: break-word;
+                }
+            }
+
+            .resource-details__header__buttons {
+                display: flex;
+                gap: 8px;
+                width: 100%;
+
+                .argo-button {
+                    flex: 1;
+                    justify-content: center;
+                }
+            }
+        }
+    }
+
+    // Tabs in resource details: Scrollable
+    .tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+
+        &__nav {
+            white-space: nowrap;
+            padding-bottom: 2px;
+
+            a, button {
+                @include touch-target;
+                padding: 12px 16px;
+                flex-shrink: 0;
+            }
+        }
+    }
+
+    // Generic top-bar fixes (non-application-details pages)
+    .page:not(.application-details) .top-bar {
         &__left-side,
         &__right-side {
             width: 100% !important;
