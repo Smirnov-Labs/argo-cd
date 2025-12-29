@@ -896,7 +896,12 @@ Are you sure you want to disable auto-sync and rollback application '${props.mat
                                                     <a className={`group-nodes-button`} onClick={() => setZoom(-0.1)} title='Zoom out'>
                                                         <i className='fa fa-search-minus fa-fw' />
                                                     </a>
-                                                    <div className={`zoom-value`}>{zoomNum}%</div>
+                                                    <div
+                                                        className={`zoom-value`}
+                                                        onClick={() => services.viewPreferences.updatePreferences({appDetails: {...pref, zoom: 1.0}})}
+                                                        title='Click to reset zoom to 100%'>
+                                                        {zoomNum}%
+                                                    </div>
                                                 </span>
                                             </div>
                                             <ApplicationResourceTree
