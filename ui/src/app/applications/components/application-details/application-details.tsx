@@ -6,6 +6,7 @@ import * as models from '../../../shared/models';
 import {RouteComponentProps} from 'react-router';
 import {BehaviorSubject, combineLatest, from, merge, Observable} from 'rxjs';
 import {delay, filter, map, mergeMap, repeat, retryWhen} from 'rxjs/operators';
+import {Helmet} from 'react-helmet';
 
 import {DataLoader, EmptyState, ErrorNotification, ObservableQuery, Page, Paginate, Revision, Timestamp} from '../../../shared/components';
 import {AppContext, Context, ContextApis} from '../../../shared/context';
@@ -27,8 +28,10 @@ import {getAppDefaultSource, getAppCurrentVersion, urlPattern} from '../utils';
 import {ChartDetails, OCIMetadata, ResourceStatus} from '../../../shared/models';
 import {ApplicationsDetailsAppDropdown} from './application-details-app-dropdown';
 import {useSidebarTarget} from '../../../sidebar/sidebar';
+import {useIsMobile} from '../../../shared/hooks/use-is-mobile';
 
 import './application-details.scss';
+import './application-details-mobile.scss';
 import {TopBarActionMenuExt, AppViewExtension, StatusPanelExtension} from '../../../shared/services/extensions-service';
 import {ApplicationHydrateOperationState} from '../application-hydrate-operation-state/application-hydrate-operation-state';
 
@@ -81,6 +84,7 @@ export const ApplicationDetails: FC<RouteComponentProps<{appnamespace: string; n
     const appContext = useContext(Context);
     const appChanged = useRef(new BehaviorSubject<appModels.AbstractApplication>(null));
     const objectListKind = props.objectListKind;
+    const isMobile = useIsMobile();
 
     const getExtensionsState = useCallback(() => {
         const extensions = services.extensions.getAppViewExtensions();
@@ -781,6 +785,201 @@ Are you sure you want to disable auto-sync and rollback application '${props.mat
                                 namespace: application.metadata.namespace
                             });
 
+                            const hasSource =
+                                !!application.spec.source ||
+                                (application.spec.sources && application.spec.sources.length > 0) ||
+                                !!application.spec.sourceHydrator;
+                            const isSynced = application.status.sync.status === appModels.SyncStatuses.Synced;
+                            const hasOperationState = !!application.status.operationState;
+                            const needsDeletionConfirmation =
+                                application.metadata.deletionTimestamp &&
+                                application.status.resources.find(r => r.requiresDeletionConfirmation) &&
+                                !((application.metadata.annotations || {})[appModels.AppDeletionConfirmedAnnotation] == 'true');
+                            const needsPruningConfirmation =
+                                application.status?.operationState?.phase === 'Running' &&
+                                application.status.resources.find(r => r.requiresDeletionConfirmation);
+
+                            const refreshApplication = () => {
+                                if (!refreshing) {
+                                    services.applications.get(application.metadata.name, application.metadata.namespace, objectListKind, 'normal');
+                                    AppUtils.setAppRefreshing(application);
+                                    appChanged.current.next(application);
+                                }
+                            };
+
+                            const hardRefreshApplication = () => {
+                                if (!refreshing) {
+                                    services.applications.get(application.metadata.name, application.metadata.namespace, objectListKind, 'hard');
+                                }
+                            };
+
+                            const detailsBody = (
+                                <>
+                                    {refreshing && <p className='application-details__refreshing-label'>Refreshing</p>}
+                                    {((pref.view === 'tree' || pref.view === 'network') && (
+                                        <>
+                                            <DataLoader load={() => services.viewPreferences.getPreferences()}>
+                                                {viewPref => (
+                                                    <ApplicationDetailsFilters
+                                                        pref={pref}
+                                                        tree={tree}
+                                                        onSetFilter={setFilter}
+                                                        onClearFilter={clearFilter}
+                                                        collapsed={viewPref.hideSidebar}
+                                                        resourceNodes={state.filteredGraph}
+                                                    />
+                                                )}
+                                            </DataLoader>
+                                            <div className='graph-options-panel'>
+                                                <a
+                                                    className={`group-nodes-button`}
+                                                    onClick={() => {
+                                                        toggleNameDirection();
+                                                    }}
+                                                    title={state.truncateNameOnRight ? 'Truncate resource name right' : 'Truncate resource name left'}>
+                                                    <i
+                                                        className={classNames({
+                                                            'fa fa-align-right': state.truncateNameOnRight,
+                                                            'fa fa-align-left': !state.truncateNameOnRight
+                                                        })}
+                                                    />
+                                                </a>
+                                                <a
+                                                    className={`group-nodes-button`}
+                                                    onClick={() => {
+                                                        toggleNodeName();
+                                                    }}
+                                                    title={state.showFullNodeName ? 'Show wrapped resource name' : 'Show full resource name'}>
+                                                    <i
+                                                        className={classNames({
+                                                            'fa fa-expand': state.showFullNodeName,
+                                                            'fa fa-compress': !state.showFullNodeName
+                                                        })}
+                                                    />
+                                                </a>
+                                                {(pref.view === 'tree' || pref.view === 'network') && (
+                                                    <Tooltip
+                                                        content={AppUtils.userMsgsList[showToolTip?.msgKey] || 'Group Nodes'}
+                                                        visible={pref.groupNodes && showToolTip !== undefined && !showToolTip?.display}
+                                                        duration={showToolTip?.duration}
+                                                        zIndex={1}>
+                                                        <a
+                                                            className={`group-nodes-button group-nodes-button${!pref.groupNodes ? '' : '-on'}`}
+                                                            title={pref.view === 'tree' ? 'Group Nodes' : 'Collapse Pods'}
+                                                            onClick={() => toggleCompactView(application.metadata.name, pref)}>
+                                                            <i className={classNames('fa fa-object-group fa-fw')} />
+                                                        </a>
+                                                    </Tooltip>
+                                                )}
+                                                <span className={`separator`} />
+                                                <a className={`group-nodes-button`} onClick={() => expandAll()} title='Expand all child nodes of all parent nodes'>
+                                                    <i className='fa fa-plus fa-fw' />
+                                                </a>
+                                                <a className={`group-nodes-button`} onClick={() => collapseAll()} title='Collapse all child nodes of all parent nodes'>
+                                                    <i className='fa fa-minus fa-fw' />
+                                                </a>
+                                                <span className={`separator`} />
+                                                <span>
+                                                    <a className={`group-nodes-button`} onClick={() => setZoom(0.1)} title='Zoom in'>
+                                                        <i className='fa fa-search-plus fa-fw' />
+                                                    </a>
+                                                    <a className={`group-nodes-button`} onClick={() => setZoom(-0.1)} title='Zoom out'>
+                                                        <i className='fa fa-search-minus fa-fw' />
+                                                    </a>
+                                                    <div className={`zoom-value`}>{zoomNum}%</div>
+                                                </span>
+                                            </div>
+                                            <ApplicationResourceTree
+                                                nodeFilter={node => filterTreeNode(node, treeFilter)}
+                                                selectedNodeFullName={selectedNodeKey}
+                                                onNodeClick={fullName => selectNode(fullName)}
+                                                nodeMenu={node =>
+                                                    AppUtils.renderResourceMenu(node, application, tree, appContext, appChanged.current, () =>
+                                                        getApplicationActionMenu(application, false)
+                                                    )
+                                                }
+                                                showCompactNodes={pref.groupNodes}
+                                                userMsgs={pref.userHelpTipMsgs}
+                                                tree={tree}
+                                                app={application}
+                                                showOrphanedResources={pref.orphanedResources}
+                                                useNetworkingHierarchy={pref.view === 'network'}
+                                                onClearFilter={clearFilter}
+                                                onGroupdNodeClick={groupdedNodeIds => openGroupNodeDetails(groupdedNodeIds)}
+                                                zoom={pref.zoom}
+                                                podGroupCount={pref.podGroupCount}
+                                                appContext={{...appContext, apis: appContext} as unknown as AppContext}
+                                                nameDirection={state.truncateNameOnRight}
+                                                nameWrap={state.showFullNodeName}
+                                                filters={pref.resourceFilter}
+                                                setTreeFilterGraph={setFilterGraph}
+                                                updateUsrHelpTipMsgs={updateHelpTipState}
+                                                setShowCompactNodes={setShowCompactNodes}
+                                                setNodeExpansion={(node, isExpanded) => setNodeExpansion(node, isExpanded)}
+                                                getNodeExpansion={node => getNodeExpansion(node)}
+                                            />
+                                        </>
+                                    )) ||
+                                        (pref.view === 'pods' && (
+                                            <PodView
+                                                tree={tree}
+                                                app={application}
+                                                onItemClick={fullName => selectNode(fullName)}
+                                                nodeMenu={node =>
+                                                    AppUtils.renderResourceMenu(node, application, tree, appContext, appChanged.current, () =>
+                                                        getApplicationActionMenu(application, false)
+                                                    )
+                                                }
+                                                quickStarts={node => AppUtils.renderResourceButtons(node, application, tree, appContext, appChanged.current)}
+                                            />
+                                        )) ||
+                                        (state.extensionsMap[pref.view] != null && (
+                                            <ExtensionView extension={state.extensionsMap[pref.view]} application={application} tree={tree} />
+                                        )) || (
+                                            <div>
+                                                <DataLoader load={() => services.viewPreferences.getPreferences()}>
+                                                    {viewPref => (
+                                                        <ApplicationDetailsFilters
+                                                            pref={pref}
+                                                            tree={tree}
+                                                            onSetFilter={setFilter}
+                                                            onClearFilter={clearFilter}
+                                                            collapsed={viewPref.hideSidebar}
+                                                            resourceNodes={filteredRes}
+                                                        />
+                                                    )}
+                                                </DataLoader>
+                                                {(filteredRes.length > 0 && (
+                                                    <Paginate
+                                                        page={state.page}
+                                                        data={filteredRes}
+                                                        onPageChange={page => setState(prevState => ({...prevState, page}))}
+                                                        preferencesKey='application-details'>
+                                                        {data => (
+                                                            <ApplicationResourceList
+                                                                pref={pref}
+                                                                onNodeClick={fullName => selectNode(fullName)}
+                                                                resources={data}
+                                                                nodeMenu={node =>
+                                                                    AppUtils.renderResourceMenu(node, application, tree, appContext, appChanged.current, () =>
+                                                                        getApplicationActionMenu(application, false)
+                                                                    )
+                                                                }
+                                                                tree={tree}
+                                                            />
+                                                        )}
+                                                    </Paginate>
+                                                )) || (
+                                                    <EmptyState icon='fa fa-search'>
+                                                        <h4>No resources found</h4>
+                                                        <h5>Try to change filter criteria</h5>
+                                                    </EmptyState>
+                                                )}
+                                            </div>
+                                        )}
+                                </>
+                            );
+
                             const activeStatusExt = state.statusExtensionsMap[selectedExtension];
                             const activeTopBarActionMenuExt = state.topBarActionMenuExtsMap[selectedExtension];
 
@@ -791,10 +990,217 @@ Are you sure you want to disable auto-sync and rollback application '${props.mat
                                 }
                             }
 
-                            return (
+                            const pageTitle = `${props.match.params.name} - ${getPageTitle(pref.view)}`;
+                            const setView = (view: AppsDetailsViewType | string) => {
+                                appContext.navigation.goto('.', {view});
+                                services.viewPreferences.updatePreferences({appDetails: {...pref, view}});
+                            };
+
+                            const baseViewOptions = [
+                                {key: Tree, label: 'Tree', icon: 'fa fa-sitemap'},
+                                {key: Pods, label: 'Pods', icon: 'fa fa-th'},
+                                {key: Network, label: 'Network', icon: 'fa fa-network-wired'},
+                                {key: List, label: 'List', icon: 'fa fa-th-list'}
+                            ];
+
+                            const extensionViewOptions =
+                                (state.extensions || [])
+                                    .filter(ext => ext.shouldDisplay(application))
+                                    .map(ext => ({key: ext.title, label: ext.title, icon: `fa ${ext.icon}`})) || [];
+
+                            const mobileViewTabs = (
+                                <div className='application-details__mobile-view-tabs'>
+                                    {[...baseViewOptions, ...extensionViewOptions].map(option => (
+                                        <button
+                                            key={option.key}
+                                            type='button'
+                                            className={classNames('application-details__mobile-view-tab', { 'is-active': pref.view === option.key })}
+                                            onClick={() => setView(option.key)}>
+                                            <i className={option.icon} />
+                                            <span>{option.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            );
+
+                            const mobilePrimaryActions = [
+                                {
+                                    key: 'details',
+                                    label: 'Details',
+                                    icon: 'fa fa-info-circle',
+                                    onClick: () => selectNode(appFullName),
+                                    disabled: !hasSource
+                                },
+                                {
+                                    key: 'diff',
+                                    label: 'Diff',
+                                    icon: 'fa fa-file-medical',
+                                    onClick: () => selectNode(appFullName, 0, 'diff'),
+                                    disabled: isSynced || !hasSource
+                                },
+                                {
+                                    key: 'sync',
+                                    label: 'Sync',
+                                    icon: 'fa fa-sync',
+                                    onClick: () => AppUtils.showDeploy('all', null, appContext),
+                                    disabled: !hasSource
+                                },
+                                {
+                                    key: 'refresh',
+                                    label: 'Refresh',
+                                    icon: classNames('fa fa-redo', {'status-icon--spin': !!refreshing}),
+                                    onClick: refreshApplication,
+                                    disabled: !!refreshing
+                                },
+                                {
+                                    key: 'history',
+                                    label: 'History',
+                                    icon: 'fa fa-history',
+                                    onClick: () => setRollbackPanelVisible(0),
+                                    disabled: !hasOperationState
+                                }
+                            ];
+
+                            const mobileOverflowItems: {title: string | React.ReactElement; action: () => any}[] = [];
+
+                            if (needsPruningConfirmation) {
+                                mobileOverflowItems.push({
+                                    title: 'Confirm Pruning',
+                                    action: () => confirmDeletion(application, 'Confirm Prunning', 'Are you sure you want to confirm resources pruning?')
+                                });
+                            }
+
+                            if (hasOperationState) {
+                                mobileOverflowItems.push({
+                                    title: 'Sync Status',
+                                    action: () => setOperationStatusVisible(true)
+                                });
+                            }
+
+                            if (needsDeletionConfirmation) {
+                                mobileOverflowItems.push({
+                                    title: 'Confirm Deletion',
+                                    action: () => confirmDeletion(application, 'Confirm Deletion', 'Are you sure you want to delete this application?')
+                                });
+                            } else if (!application.metadata.deletionTimestamp) {
+                                mobileOverflowItems.push({
+                                    title: 'Delete',
+                                    action: () => deleteApplication()
+                                });
+                            }
+
+                            if (!refreshing) {
+                                mobileOverflowItems.push({
+                                    title: 'Hard Refresh',
+                                    action: () => hardRefreshApplication()
+                                });
+                            }
+
+                            const extensionOverflowItems =
+                                state.topBarActionMenuExts
+                                    ?.filter(ext => ext.shouldDisplay?.(application))
+                                    .map(ext => ({
+                                        title: <ext.component application={application} tree={tree} openFlyout={() => setExtensionPanelVisible(ext.id)} />,
+                                        action: () => setExtensionPanelVisible(ext.id)
+                                    })) || [];
+
+                            mobileOverflowItems.push(...extensionOverflowItems);
+
+                            const overlayPanels = (
+                                <>
+                                    <SlidingPanel isShown={state.groupedResources.length > 0} onClose={() => closeGroupedNodesPanel()}>
+                                        <div className='application-details__sliding-panel-pagination-wrap'>
+                                            <Paginate
+                                                page={state.slidingPanelPage}
+                                                data={state.groupedResources}
+                                                onPageChange={page => setState(prevState => ({...prevState, slidingPanelPage: page}))}
+                                                preferencesKey='grouped-nodes-details'>
+                                                {data => (
+                                                    <ApplicationResourceList
+                                                        pref={pref}
+                                                        onNodeClick={fullName => selectNode(fullName)}
+                                                        resources={data}
+                                                        nodeMenu={node =>
+                                                            AppUtils.renderResourceMenu(node, application, tree, appContext, appChanged.current, () =>
+                                                                getApplicationActionMenu(application, false)
+                                                            )
+                                                        }
+                                                        tree={tree}
+                                                    />
+                                                )}
+                                            </Paginate>
+                                        </div>
+                                    </SlidingPanel>
+                                    <SlidingPanel isShown={selectedNode != null || isAppSelected} onClose={() => selectNode('')}>
+                                        <ResourceDetails
+                                            tree={tree}
+                                            application={application}
+                                            isAppSelected={isAppSelected}
+                                            updateApp={(app: models.Application, query: {validate?: boolean}) => updateApp(app, query)}
+                                            selectedNode={selectedNode}
+                                            appCxt={{...appContext, apis: appContext} as unknown as AppContext}
+                                            tab={tab}
+                                        />
+                                    </SlidingPanel>
+                                    <ApplicationSyncPanel
+                                        application={application}
+                                        hide={() => AppUtils.showDeploy(null, null, appContext)}
+                                        selectedResource={syncResourceKey}
+                                    />
+                                    <SlidingPanel isShown={selectedRollbackDeploymentIndex > -1} onClose={() => setRollbackPanelVisible(-1)}>
+                                        {selectedRollbackDeploymentIndex > -1 && (
+                                            <ApplicationDeploymentHistory
+                                                app={application}
+                                                rollbackApp={info => rollbackApplication(info, application)}
+                                                selectDeployment={i => setRollbackPanelVisible(i)}
+                                            />
+                                        )}
+                                    </SlidingPanel>
+                                    <SlidingPanel isShown={showOperationState && !!operationState} onClose={() => setOperationStatusVisible(false)}>
+                                        {operationState && <ApplicationOperationState application={application} operationState={operationState} />}
+                                    </SlidingPanel>
+                                    <SlidingPanel isShown={showHydrateOperationState && !!hydrateOperationState} onClose={() => setHydrateOperationStatusVisible(false)}>
+                                        {hydrateOperationState && <ApplicationHydrateOperationState hydrateOperationState={hydrateOperationState} />}
+                                    </SlidingPanel>
+                                    <SlidingPanel isShown={showConditions && !!conditions} onClose={() => setConditionsStatusVisible(false)}>
+                                        {conditions && <ApplicationConditions conditions={conditions} />}
+                                    </SlidingPanel>
+                                    <SlidingPanel
+                                        isShown={state.revision === 'SYNC_STATUS_REVISION' || state.revision === 'OPERATION_STATE_REVISION'}
+                                        isMiddle={true}
+                                        onClose={() => setState(prevState => ({...prevState, revision: null}))}>
+                                        {state.revision === 'SYNC_STATUS_REVISION' &&
+                                            (application.status.sync.revisions || application.status.sync.revision) &&
+                                            getContent(application, source, application.status.sync.revisions, application.status.sync.revision)}
+                                        {state.revision === 'OPERATION_STATE_REVISION' &&
+                                            (application.status.operationState.syncResult.revisions || application.status.operationState.syncResult.revision) &&
+                                            getContent(
+                                                application,
+                                                source,
+                                                application.status.operationState.syncResult.revisions,
+                                                application.status.operationState.syncResult.revision
+                                            )}
+                                    </SlidingPanel>
+                                    <SlidingPanel
+                                        isShown={selectedExtension !== '' && activeStatusExt != null && activeStatusExt.flyout != null}
+                                        onClose={() => setExtensionPanelVisible('')}>
+                                        {selectedExtension !== '' && activeStatusExt?.flyout && <activeStatusExt.flyout application={application} tree={tree} />}
+                                    </SlidingPanel>
+                                    <SlidingPanel
+                                        isMiddle={activeTopBarActionMenuExt?.isMiddle ?? true}
+                                        isShown={selectedExtension !== '' && activeTopBarActionMenuExt != null && activeTopBarActionMenuExt.flyout != null}
+                                        onClose={() => setExtensionPanelVisible('')}>
+                                        {selectedExtension !== '' && activeTopBarActionMenuExt?.flyout && (
+                                            <activeTopBarActionMenuExt.flyout application={application} tree={tree} />
+                                        )}
+                                    </SlidingPanel>
+                                </>
+                            );
+
+                            const renderDesktop = () => (
                                 <div className={`application-details ${props.match.params.name}`}>
                                     <Page
-                                        title={props.match.params.name + ' - ' + getPageTitle(pref.view)}
+                                        title={pageTitle}
                                         useTitleOnly={true}
                                         topBarTitle={getPageTitle(pref.view)}
                                         toolbar={{
@@ -813,38 +1219,14 @@ Are you sure you want to disable auto-sync and rollback application '${props.mat
                                             tools: (
                                                 <React.Fragment key='app-list-tools'>
                                                     <div className='application-details__view-type'>
-                                                        <i
-                                                            className={classNames('fa fa-sitemap', {selected: pref.view === Tree})}
-                                                            title='Tree'
-                                                            onClick={() => {
-                                                                appContext.navigation.goto('.', {view: Tree});
-                                                                services.viewPreferences.updatePreferences({appDetails: {...pref, view: Tree}});
-                                                            }}
-                                                        />
-                                                        <i
-                                                            className={classNames('fa fa-th', {selected: pref.view === Pods})}
-                                                            title='Pods'
-                                                            onClick={() => {
-                                                                appContext.navigation.goto('.', {view: Pods});
-                                                                services.viewPreferences.updatePreferences({appDetails: {...pref, view: Pods}});
-                                                            }}
-                                                        />
+                                                        <i className={classNames('fa fa-sitemap', {selected: pref.view === Tree})} title='Tree' onClick={() => setView(Tree)} />
+                                                        <i className={classNames('fa fa-th', {selected: pref.view === Pods})} title='Pods' onClick={() => setView(Pods)} />
                                                         <i
                                                             className={classNames('fa fa-network-wired', {selected: pref.view === Network})}
                                                             title='Network'
-                                                            onClick={() => {
-                                                                appContext.navigation.goto('.', {view: Network});
-                                                                services.viewPreferences.updatePreferences({appDetails: {...pref, view: Network}});
-                                                            }}
+                                                            onClick={() => setView(Network)}
                                                         />
-                                                        <i
-                                                            className={classNames('fa fa-th-list', {selected: pref.view === List})}
-                                                            title='List'
-                                                            onClick={() => {
-                                                                appContext.navigation.goto('.', {view: List});
-                                                                services.viewPreferences.updatePreferences({appDetails: {...pref, view: List}});
-                                                            }}
-                                                        />
+                                                        <i className={classNames('fa fa-th-list', {selected: pref.view === List})} title='List' onClick={() => setView(List)} />
                                                         {state.extensions &&
                                                             (state.extensions || [])
                                                                 .filter(ext => ext.shouldDisplay(application))
@@ -853,10 +1235,7 @@ Are you sure you want to disable auto-sync and rollback application '${props.mat
                                                                         key={ext.title}
                                                                         className={classNames(`fa ${ext.icon}`, {selected: pref.view === ext.title})}
                                                                         title={ext.title}
-                                                                        onClick={() => {
-                                                                            appContext.navigation.goto('.', {view: ext.title});
-                                                                            services.viewPreferences.updatePreferences({appDetails: {...pref, view: ext.title}});
-                                                                        }}
+                                                                        onClick={() => setView(ext.title)}
                                                                     />
                                                                 ))}
                                                     </div>
@@ -875,260 +1254,78 @@ Are you sure you want to disable auto-sync and rollback application '${props.mat
                                                     showMetadataInfo={revision => setState(prevState => ({...prevState, revision}))}
                                                 />
                                             </div>
-                                            <div className='application-details__tree'>
-                                                {refreshing && <p className='application-details__refreshing-label'>Refreshing</p>}
-                                                {((pref.view === 'tree' || pref.view === 'network') && (
-                                                    <>
-                                                        <DataLoader load={() => services.viewPreferences.getPreferences()}>
-                                                            {viewPref => (
-                                                                <ApplicationDetailsFilters
-                                                                    pref={pref}
-                                                                    tree={tree}
-                                                                    onSetFilter={setFilter}
-                                                                    onClearFilter={clearFilter}
-                                                                    collapsed={viewPref.hideSidebar}
-                                                                    resourceNodes={state.filteredGraph}
-                                                                />
-                                                            )}
-                                                        </DataLoader>
-                                                        <div className='graph-options-panel'>
-                                                            <a
-                                                                className={`group-nodes-button`}
-                                                                onClick={() => {
-                                                                    toggleNameDirection();
-                                                                }}
-                                                                title={state.truncateNameOnRight ? 'Truncate resource name right' : 'Truncate resource name left'}>
-                                                                <i
-                                                                    className={classNames({
-                                                                        'fa fa-align-right': state.truncateNameOnRight,
-                                                                        'fa fa-align-left': !state.truncateNameOnRight
-                                                                    })}
-                                                                />
-                                                            </a>
-                                                            <a
-                                                                className={`group-nodes-button`}
-                                                                onClick={() => {
-                                                                    toggleNodeName();
-                                                                }}
-                                                                title={state.showFullNodeName ? 'Show wrapped resource name' : 'Show full resource name'}>
-                                                                <i
-                                                                    className={classNames({
-                                                                        'fa fa-expand': state.showFullNodeName,
-                                                                        'fa fa-compress': !state.showFullNodeName
-                                                                    })}
-                                                                />
-                                                            </a>
-                                                            {(pref.view === 'tree' || pref.view === 'network') && (
-                                                                <Tooltip
-                                                                    content={AppUtils.userMsgsList[showToolTip?.msgKey] || 'Group Nodes'}
-                                                                    visible={pref.groupNodes && showToolTip !== undefined && !showToolTip?.display}
-                                                                    duration={showToolTip?.duration}
-                                                                    zIndex={1}>
-                                                                    <a
-                                                                        className={`group-nodes-button group-nodes-button${!pref.groupNodes ? '' : '-on'}`}
-                                                                        title={pref.view === 'tree' ? 'Group Nodes' : 'Collapse Pods'}
-                                                                        onClick={() => toggleCompactView(application.metadata.name, pref)}>
-                                                                        <i className={classNames('fa fa-object-group fa-fw')} />
-                                                                    </a>
-                                                                </Tooltip>
-                                                            )}
-                                                            <span className={`separator`} />
-                                                            <a className={`group-nodes-button`} onClick={() => expandAll()} title='Expand all child nodes of all parent nodes'>
-                                                                <i className='fa fa-plus fa-fw' />
-                                                            </a>
-                                                            <a className={`group-nodes-button`} onClick={() => collapseAll()} title='Collapse all child nodes of all parent nodes'>
-                                                                <i className='fa fa-minus fa-fw' />
-                                                            </a>
-                                                            <span className={`separator`} />
-                                                            <span>
-                                                                <a className={`group-nodes-button`} onClick={() => setZoom(0.1)} title='Zoom in'>
-                                                                    <i className='fa fa-search-plus fa-fw' />
-                                                                </a>
-                                                                <a className={`group-nodes-button`} onClick={() => setZoom(-0.1)} title='Zoom out'>
-                                                                    <i className='fa fa-search-minus fa-fw' />
-                                                                </a>
-                                                                <div className={`zoom-value`}>{zoomNum}%</div>
-                                                            </span>
-                                                        </div>
-                                                        <ApplicationResourceTree
-                                                            nodeFilter={node => filterTreeNode(node, treeFilter)}
-                                                            selectedNodeFullName={selectedNodeKey}
-                                                            onNodeClick={fullName => selectNode(fullName)}
-                                                            nodeMenu={node =>
-                                                                AppUtils.renderResourceMenu(node, application, tree, appContext, appChanged.current, () =>
-                                                                    getApplicationActionMenu(application, false)
-                                                                )
-                                                            }
-                                                            showCompactNodes={pref.groupNodes}
-                                                            userMsgs={pref.userHelpTipMsgs}
-                                                            tree={tree}
-                                                            app={application}
-                                                            showOrphanedResources={pref.orphanedResources}
-                                                            useNetworkingHierarchy={pref.view === 'network'}
-                                                            onClearFilter={clearFilter}
-                                                            onGroupdNodeClick={groupdedNodeIds => openGroupNodeDetails(groupdedNodeIds)}
-                                                            zoom={pref.zoom}
-                                                            podGroupCount={pref.podGroupCount}
-                                                            appContext={{...appContext, apis: appContext} as unknown as AppContext}
-                                                            nameDirection={state.truncateNameOnRight}
-                                                            nameWrap={state.showFullNodeName}
-                                                            filters={pref.resourceFilter}
-                                                            setTreeFilterGraph={setFilterGraph}
-                                                            updateUsrHelpTipMsgs={updateHelpTipState}
-                                                            setShowCompactNodes={setShowCompactNodes}
-                                                            setNodeExpansion={(node, isExpanded) => setNodeExpansion(node, isExpanded)}
-                                                            getNodeExpansion={node => getNodeExpansion(node)}
-                                                        />
-                                                    </>
-                                                )) ||
-                                                    (pref.view === 'pods' && (
-                                                        <PodView
-                                                            tree={tree}
-                                                            app={application}
-                                                            onItemClick={fullName => selectNode(fullName)}
-                                                            nodeMenu={node =>
-                                                                AppUtils.renderResourceMenu(node, application, tree, appContext, appChanged.current, () =>
-                                                                    getApplicationActionMenu(application, false)
-                                                                )
-                                                            }
-                                                            quickStarts={node => AppUtils.renderResourceButtons(node, application, tree, appContext, appChanged.current)}
-                                                        />
-                                                    )) ||
-                                                    (state.extensionsMap[pref.view] != null && (
-                                                        <ExtensionView extension={state.extensionsMap[pref.view]} application={application} tree={tree} />
-                                                    )) || (
-                                                        <div>
-                                                            <DataLoader load={() => services.viewPreferences.getPreferences()}>
-                                                                {viewPref => (
-                                                                    <ApplicationDetailsFilters
-                                                                        pref={pref}
-                                                                        tree={tree}
-                                                                        onSetFilter={setFilter}
-                                                                        onClearFilter={clearFilter}
-                                                                        collapsed={viewPref.hideSidebar}
-                                                                        resourceNodes={filteredRes}
-                                                                    />
-                                                                )}
-                                                            </DataLoader>
-                                                            {(filteredRes.length > 0 && (
-                                                                <Paginate
-                                                                    page={state.page}
-                                                                    data={filteredRes}
-                                                                    onPageChange={page => setState(prevState => ({...prevState, page}))}
-                                                                    preferencesKey='application-details'>
-                                                                    {data => (
-                                                                        <ApplicationResourceList
-                                                                            pref={pref}
-                                                                            onNodeClick={fullName => selectNode(fullName)}
-                                                                            resources={data}
-                                                                            nodeMenu={node =>
-                                                                                AppUtils.renderResourceMenu(node, application, tree, appContext, appChanged.current, () =>
-                                                                                    getApplicationActionMenu(application, false)
-                                                                                )
-                                                                            }
-                                                                            tree={tree}
-                                                                        />
-                                                                    )}
-                                                                </Paginate>
-                                                            )) || (
-                                                                <EmptyState icon='fa fa-search'>
-                                                                    <h4>No resources found</h4>
-                                                                    <h5>Try to change filter criteria</h5>
-                                                                </EmptyState>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                            </div>
+                                            <div className='application-details__tree'>{detailsBody}</div>
                                         </div>
-                                        <SlidingPanel isShown={state.groupedResources.length > 0} onClose={() => closeGroupedNodesPanel()}>
-                                            <div className='application-details__sliding-panel-pagination-wrap'>
-                                                <Paginate
-                                                    page={state.slidingPanelPage}
-                                                    data={state.groupedResources}
-                                                    onPageChange={page => setState(prevState => ({...prevState, slidingPanelPage: page}))}
-                                                    preferencesKey='grouped-nodes-details'>
-                                                    {data => (
-                                                        <ApplicationResourceList
-                                                            pref={pref}
-                                                            onNodeClick={fullName => selectNode(fullName)}
-                                                            resources={data}
-                                                            nodeMenu={node =>
-                                                                AppUtils.renderResourceMenu(node, application, tree, appContext, appChanged.current, () =>
-                                                                    getApplicationActionMenu(application, false)
-                                                                )
-                                                            }
-                                                            tree={tree}
-                                                        />
-                                                    )}
-                                                </Paginate>
-                                            </div>
-                                        </SlidingPanel>
-                                        <SlidingPanel isShown={selectedNode != null || isAppSelected} onClose={() => selectNode('')}>
-                                            <ResourceDetails
-                                                tree={tree}
-                                                application={application}
-                                                isAppSelected={isAppSelected}
-                                                updateApp={(app: models.Application, query: {validate?: boolean}) => updateApp(app, query)}
-                                                selectedNode={selectedNode}
-                                                appCxt={{...appContext, apis: appContext} as unknown as AppContext}
-                                                tab={tab}
-                                            />
-                                        </SlidingPanel>
-                                        <ApplicationSyncPanel
-                                            application={application}
-                                            hide={() => AppUtils.showDeploy(null, null, appContext)}
-                                            selectedResource={syncResourceKey}
-                                        />
-                                        <SlidingPanel isShown={selectedRollbackDeploymentIndex > -1} onClose={() => setRollbackPanelVisible(-1)}>
-                                            {selectedRollbackDeploymentIndex > -1 && (
-                                                <ApplicationDeploymentHistory
-                                                    app={application}
-                                                    rollbackApp={info => rollbackApplication(info, application)}
-                                                    selectDeployment={i => setRollbackPanelVisible(i)}
-                                                />
-                                            )}
-                                        </SlidingPanel>
-                                        <SlidingPanel isShown={showOperationState && !!operationState} onClose={() => setOperationStatusVisible(false)}>
-                                            {operationState && <ApplicationOperationState application={application} operationState={operationState} />}
-                                        </SlidingPanel>
-                                        <SlidingPanel isShown={showHydrateOperationState && !!hydrateOperationState} onClose={() => setHydrateOperationStatusVisible(false)}>
-                                            {hydrateOperationState && <ApplicationHydrateOperationState hydrateOperationState={hydrateOperationState} />}
-                                        </SlidingPanel>
-                                        <SlidingPanel isShown={showConditions && !!conditions} onClose={() => setConditionsStatusVisible(false)}>
-                                            {conditions && <ApplicationConditions conditions={conditions} />}
-                                        </SlidingPanel>
-                                        <SlidingPanel
-                                            isShown={state.revision === 'SYNC_STATUS_REVISION' || state.revision === 'OPERATION_STATE_REVISION'}
-                                            isMiddle={true}
-                                            onClose={() => setState(prevState => ({...prevState, revision: null}))}>
-                                            {state.revision === 'SYNC_STATUS_REVISION' &&
-                                                (application.status.sync.revisions || application.status.sync.revision) &&
-                                                getContent(application, source, application.status.sync.revisions, application.status.sync.revision)}
-                                            {state.revision === 'OPERATION_STATE_REVISION' &&
-                                                (application.status.operationState.syncResult.revisions || application.status.operationState.syncResult.revision) &&
-                                                getContent(
-                                                    application,
-                                                    source,
-                                                    application.status.operationState.syncResult.revisions,
-                                                    application.status.operationState.syncResult.revision
-                                                )}
-                                        </SlidingPanel>
-                                        <SlidingPanel
-                                            isShown={selectedExtension !== '' && activeStatusExt != null && activeStatusExt.flyout != null}
-                                            onClose={() => setExtensionPanelVisible('')}>
-                                            {selectedExtension !== '' && activeStatusExt?.flyout && <activeStatusExt.flyout application={application} tree={tree} />}
-                                        </SlidingPanel>
-                                        <SlidingPanel
-                                            isMiddle={activeTopBarActionMenuExt?.isMiddle ?? true}
-                                            isShown={selectedExtension !== '' && activeTopBarActionMenuExt != null && activeTopBarActionMenuExt.flyout != null}
-                                            onClose={() => setExtensionPanelVisible('')}>
-                                            {selectedExtension !== '' && activeTopBarActionMenuExt?.flyout && (
-                                                <activeTopBarActionMenuExt.flyout application={application} tree={tree} />
-                                            )}
-                                        </SlidingPanel>
+                                        {overlayPanels}
                                     </Page>
                                 </div>
                             );
+
+                            const renderMobile = () => (
+                                <div className={`application-details application-details--mobile ${props.match.params.name}`}>
+                                    <Page title={pageTitle} useTitleOnly={true} hideAuth={true}>
+                                        <Helmet>
+                                            <title>{pageTitle}</title>
+                                        </Helmet>
+                                        <div className='application-details__mobile'>
+                                            <div className='application-details__mobile-header'>
+                                                <div className='application-details__mobile-breadcrumb'>
+                                                    <button type='button' className='application-details__mobile-back' onClick={() => appContext.navigation.goto('/applications')}>
+                                                        <i className='fa fa-chevron-left' />
+                                                        Applications
+                                                    </button>
+                                                    <span>/</span>
+                                                </div>
+                                                <div className='application-details__mobile-title'>
+                                                    <ApplicationsDetailsAppDropdown appName={props.match.params.name} objectListKind={objectListKind} />
+                                                </div>
+                                            </div>
+                                            <div className='application-details__mobile-status'>
+                                                <ApplicationStatusPanel
+                                                    application={application}
+                                                    showDiff={() => selectNode(appFullName, 0, 'diff')}
+                                                    showOperation={() => setOperationStatusVisible(true)}
+                                                    showHydrateOperation={() => setHydrateOperationStatusVisible(true)}
+                                                    showConditions={() => setConditionsStatusVisible(true)}
+                                                    showExtension={id => setExtensionPanelVisible(id)}
+                                                    showMetadataInfo={revision => setState(prevState => ({...prevState, revision}))}
+                                                />
+                                            </div>
+                                            {mobileViewTabs}
+                                            <div className='application-details__mobile-content'>
+                                                <div className='application-details__tree'>{detailsBody}</div>
+                                            </div>
+                                            <div className='application-details__mobile-action-bar'>
+                                                {mobilePrimaryActions.map(action => (
+                                                    <button
+                                                        key={action.key}
+                                                        type='button'
+                                                        className='application-details__mobile-action'
+                                                        onClick={action.onClick}
+                                                        disabled={action.disabled}>
+                                                        <i className={action.icon} />
+                                                        <span>{action.label}</span>
+                                                    </button>
+                                                ))}
+                                                {mobileOverflowItems.length > 0 && (
+                                                    <DropDownMenu
+                                                        items={mobileOverflowItems}
+                                                        anchor={() => (
+                                                            <button type='button' className='application-details__mobile-action'>
+                                                                <i className='fa fa-ellipsis-h' />
+                                                                <span>More</span>
+                                                            </button>
+                                                        )}
+                                                    />
+                                                )}
+                                            </div>
+                                        </div>
+                                        {overlayPanels}
+                                    </Page>
+                                </div>
+                            );
+
+                            return isMobile ? renderMobile() : renderDesktop();
                         }}
                     </DataLoader>
                 )}
