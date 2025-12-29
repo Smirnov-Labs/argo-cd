@@ -21,7 +21,9 @@ export default defineConfig({
             name: 'mobile-screenshots',
             testMatch: 'mobile-screenshots.spec.ts',
             use: {
-                ...devices['iPhone 12']
+                ...devices['iPhone 12'],
+                // Use chromium instead of webkit for better compatibility
+                browserName: 'chromium'
             }
         }
     ]
