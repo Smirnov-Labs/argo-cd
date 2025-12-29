@@ -85,6 +85,16 @@ export const ApplicationDetails: FC<RouteComponentProps<{appnamespace: string; n
     const appChanged = useRef(new BehaviorSubject<appModels.AbstractApplication>(null));
     const objectListKind = props.objectListKind;
     const isMobile = useIsMobile();
+    const [viewportWidth, setViewportWidth] = useState(() => (typeof window === 'undefined' ? 0 : window.innerWidth));
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        const handleResize = () => setViewportWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const getExtensionsState = useCallback(() => {
         const extensions = services.extensions.getAppViewExtensions();
@@ -1197,8 +1207,28 @@ Are you sure you want to disable auto-sync and rollback application '${props.mat
                                 </>
                             );
 
+                            const debugBadge = (
+                                <div
+                                    style={{
+                                        position: 'fixed',
+                                        top: 8,
+                                        right: 8,
+                                        zIndex: 9999,
+                                        background: 'rgba(15, 39, 51, 0.9)',
+                                        color: '#fff',
+                                        padding: '6px 10px',
+                                        borderRadius: 8,
+                                        fontSize: 11,
+                                        fontWeight: 600,
+                                        letterSpacing: '0.02em'
+                                    }}>
+                                    {`mobile=${isMobile ? 'true' : 'false'} width=${viewportWidth}px`}
+                                </div>
+                            );
+
                             const renderDesktop = () => (
                                 <div className={`application-details ${props.match.params.name}`}>
+                                    {debugBadge}
                                     <Page
                                         title={pageTitle}
                                         useTitleOnly={true}
@@ -1267,6 +1297,7 @@ Are you sure you want to disable auto-sync and rollback application '${props.mat
                                         <Helmet>
                                             <title>{pageTitle}</title>
                                         </Helmet>
+                                        {debugBadge}
                                         <div className='application-details__mobile'>
                                             <div className='application-details__mobile-header'>
                                                 <div className='application-details__mobile-breadcrumb'>
