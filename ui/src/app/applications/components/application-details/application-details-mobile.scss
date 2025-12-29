@@ -268,21 +268,21 @@ $mobile-action-bar-height: 72px;
             }
         }
 
-        // Add labels to expand/collapse buttons
-        > a:nth-child(4) { // Expand all (after 3 hidden)
+        // Add labels to expand/collapse buttons (fa-plus and fa-minus)
+        a[title*="Expand"] {
             &::after {
-                content: "Expand";
-                font-size: 9px;
+                content: "All";
+                font-size: 8px;
                 color: $argo-color-gray-6;
                 text-transform: uppercase;
                 font-weight: 600;
             }
         }
 
-        > a:nth-child(5) { // Collapse all
+        a[title*="Collapse"] {
             &::after {
-                content: "Collapse";
-                font-size: 9px;
+                content: "All";
+                font-size: 8px;
                 color: $argo-color-gray-6;
                 text-transform: uppercase;
                 font-weight: 600;
