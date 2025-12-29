@@ -24,6 +24,16 @@ const pages = [
     {name: 'settings', path: '/settings', waitForSelector: '.settings', requiresAuth: true}
 ];
 
+// Helper function to login
+async function login(page: any, url: string, username: string, password: string) {
+    await page.goto(`${url}/login`);
+    await page.fill('input[name="username"]', username);
+    await page.fill('input[name="password"]', password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/applications/, {timeout: 10000});
+    await page.waitForTimeout(1000);
+}
+
 test.describe('Mobile UI Visual Testing', () => {
     viewports.forEach(viewport => {
         test.describe(`${viewport.name} (${viewport.width}x${viewport.height})`, () => {
@@ -229,5 +239,271 @@ test.describe('Mobile UI Element Testing', () => {
 
         expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1); // Allow 1px tolerance
         console.log(`✓ No horizontal scroll: scrollWidth=${scrollWidth}, clientWidth=${clientWidth}`);
+    });
+});
+
+// Mobile Application Details Screenshots
+test.describe('Mobile Application Details Screenshots', () => {
+    test.use({
+        viewport: {width: 390, height: 844}, // iPhone 12
+        ignoreHTTPSErrors: true
+    });
+
+    test.beforeEach(async ({page}) => {
+        await login(page, ARGOCD_URL, ARGOCD_USERNAME, ARGOCD_PASSWORD);
+    });
+
+    test('Application Details - Tree View', async ({page}) => {
+        // Navigate to an application (guestbook is commonly available)
+        await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=tree`);
+        await page.waitForTimeout(2000);
+
+        await page.screenshot({
+            path: path.join(SCREENSHOT_DIR, 'mobile', 'app-details-tree-view.png'),
+            fullPage: true
+        });
+        console.log('✓ Screenshot: Application Details - Tree View');
+    });
+
+    test('Application Details - List View', async ({page}) => {
+        await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=list`);
+        await page.waitForTimeout(2000);
+
+        await page.screenshot({
+            path: path.join(SCREENSHOT_DIR, 'mobile', 'app-details-list-view.png'),
+            fullPage: true
+        });
+        console.log('✓ Screenshot: Application Details - List View');
+    });
+
+    test('Application Details - Pods View', async ({page}) => {
+        await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=pods`);
+        await page.waitForTimeout(2000);
+
+        await page.screenshot({
+            path: path.join(SCREENSHOT_DIR, 'mobile', 'app-details-pods-view.png'),
+            fullPage: true
+        });
+        console.log('✓ Screenshot: Application Details - Pods View');
+    });
+
+    test('Application Details - Network View', async ({page}) => {
+        await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=network`);
+        await page.waitForTimeout(2000);
+
+        await page.screenshot({
+            path: path.join(SCREENSHOT_DIR, 'mobile', 'app-details-network-view.png'),
+            fullPage: true
+        });
+        console.log('✓ Screenshot: Application Details - Network View');
+    });
+
+    test('Mobile Action Bar - More Menu', async ({page}) => {
+        await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=list`);
+        await page.waitForTimeout(2000);
+
+        // Click More button in action bar
+        await page.click('.application-details__mobile-action:last-child');
+        await page.waitForTimeout(500);
+
+        await page.screenshot({
+            path: path.join(SCREENSHOT_DIR, 'mobile', 'app-details-more-menu.png'),
+            fullPage: true
+        });
+        console.log('✓ Screenshot: Mobile More Menu');
+    });
+
+    test('Sync Status Panel (MobilePanel)', async ({page}) => {
+        await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=list`);
+        await page.waitForTimeout(2000);
+
+        // Click More button
+        await page.click('.application-details__mobile-action:last-child');
+        await page.waitForTimeout(500);
+
+        // Click Sync Status
+        await page.click('[qe-id="undefined-Sync Status"]');
+        await page.waitForTimeout(1000);
+
+        // Screenshot top of panel
+        await page.screenshot({
+            path: path.join(SCREENSHOT_DIR, 'mobile', 'sync-status-panel-top.png'),
+            fullPage: false
+        });
+        console.log('✓ Screenshot: Sync Status Panel (Top)');
+
+        // Scroll to bottom of panel to see results
+        await page.evaluate(() => {
+            const body = document.querySelector('.mobile-panel__body');
+            if (body) body.scrollTop = body.scrollHeight;
+        });
+        await page.waitForTimeout(500);
+
+        await page.screenshot({
+            path: path.join(SCREENSHOT_DIR, 'mobile', 'sync-status-panel-bottom.png'),
+            fullPage: false
+        });
+        console.log('✓ Screenshot: Sync Status Panel (Bottom)');
+
+        // Close panel
+        await page.click('.mobile-panel__close');
+        await page.waitForTimeout(500);
+    });
+
+    test('Sync Panel (MobilePanel)', async ({page}) => {
+        await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=list`);
+        await page.waitForTimeout(2000);
+
+        // Click Sync button in action bar
+        await page.click('.application-details__mobile-action:nth-child(3)');
+        await page.waitForTimeout(1000);
+
+        await page.screenshot({
+            path: path.join(SCREENSHOT_DIR, 'mobile', 'sync-panel.png'),
+            fullPage: false
+        });
+        console.log('✓ Screenshot: Sync Panel');
+
+        // Close panel
+        await page.click('.mobile-panel__close');
+        await page.waitForTimeout(500);
+    });
+
+    test('Mobile Sidebar Open', async ({page}) => {
+        await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=list`);
+        await page.waitForTimeout(2000);
+
+        // Click hamburger menu
+        await page.click('.mobile-menu-button');
+        await page.waitForTimeout(500);
+
+        await page.screenshot({
+            path: path.join(SCREENSHOT_DIR, 'mobile', 'sidebar-open.png'),
+            fullPage: true
+        });
+        console.log('✓ Screenshot: Mobile Sidebar Open');
+
+        // Close sidebar
+        await page.click('.sidebar-overlay');
+        await page.waitForTimeout(500);
+    });
+
+    test('Application Filter Panel', async ({page}) => {
+        await page.goto(`${ARGOCD_URL}/applications`);
+        await page.waitForTimeout(2000);
+
+        // Look for filter button and click it
+        const filterButton = page.locator('.applications-list__filters button, [class*="filter"]').first();
+        if (await filterButton.isVisible()) {
+            await filterButton.click();
+            await page.waitForTimeout(500);
+
+            await page.screenshot({
+                path: path.join(SCREENSHOT_DIR, 'mobile', 'filter-panel.png'),
+                fullPage: true
+            });
+            console.log('✓ Screenshot: Filter Panel');
+        }
+    });
+});
+
+// Comprehensive mobile screenshots for PR documentation
+test.describe('PR Documentation Screenshots', () => {
+    test.use({
+        viewport: {width: 390, height: 844},
+        ignoreHTTPSErrors: true
+    });
+
+    test('Generate all mobile screenshots for PR', async ({page}) => {
+        await login(page, ARGOCD_URL, ARGOCD_USERNAME, ARGOCD_PASSWORD);
+
+        const screenshots: {name: string; action: () => Promise<void>}[] = [
+            {
+                name: '01-applications-list',
+                action: async () => {
+                    await page.goto(`${ARGOCD_URL}/applications`);
+                    await page.waitForTimeout(2000);
+                }
+            },
+            {
+                name: '02-app-details-tree',
+                action: async () => {
+                    await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=tree`);
+                    await page.waitForTimeout(2000);
+                }
+            },
+            {
+                name: '03-app-details-list',
+                action: async () => {
+                    await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=list`);
+                    await page.waitForTimeout(2000);
+                }
+            },
+            {
+                name: '04-app-details-pods',
+                action: async () => {
+                    await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=pods`);
+                    await page.waitForTimeout(2000);
+                }
+            },
+            {
+                name: '05-app-details-network',
+                action: async () => {
+                    await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=network`);
+                    await page.waitForTimeout(2000);
+                }
+            },
+            {
+                name: '06-mobile-sidebar',
+                action: async () => {
+                    await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=list`);
+                    await page.waitForTimeout(1000);
+                    await page.click('.mobile-menu-button');
+                    await page.waitForTimeout(500);
+                }
+            },
+            {
+                name: '07-more-menu',
+                action: async () => {
+                    await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=list`);
+                    await page.waitForTimeout(1000);
+                    await page.click('.application-details__mobile-action:last-child');
+                    await page.waitForTimeout(500);
+                }
+            },
+            {
+                name: '08-sync-status-panel',
+                action: async () => {
+                    await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=list`);
+                    await page.waitForTimeout(1000);
+                    await page.click('.application-details__mobile-action:last-child');
+                    await page.waitForTimeout(300);
+                    await page.click('[qe-id="undefined-Sync Status"]');
+                    await page.waitForTimeout(1000);
+                }
+            },
+            {
+                name: '09-sync-panel',
+                action: async () => {
+                    await page.goto(`${ARGOCD_URL}/applications/argocd/guestbook?view=list`);
+                    await page.waitForTimeout(1000);
+                    await page.click('.application-details__mobile-action:nth-child(3)');
+                    await page.waitForTimeout(1000);
+                }
+            }
+        ];
+
+        for (const screenshot of screenshots) {
+            try {
+                await screenshot.action();
+                await page.screenshot({
+                    path: path.join(SCREENSHOT_DIR, 'pr-docs', `${screenshot.name}.png`),
+                    fullPage: false
+                });
+                console.log(`✓ ${screenshot.name}`);
+            } catch (e) {
+                console.log(`✗ ${screenshot.name}: ${e.message}`);
+            }
+        }
     });
 });
