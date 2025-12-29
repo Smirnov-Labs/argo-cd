@@ -2,8 +2,9 @@ import {ErrorNotification, FormField, NotificationType, SlidingPanel, Tooltip} f
 import * as React from 'react';
 import {Form, FormApi, Text} from 'react-form';
 
-import {ARGO_WARNING_COLOR, CheckboxField, Spinner} from '../../../shared/components';
+import {ARGO_WARNING_COLOR, CheckboxField, MobilePanel, Spinner} from '../../../shared/components';
 import {Consumer} from '../../../shared/context';
+import {useIsMobile} from '../../../shared/hooks/use-is-mobile';
 import * as models from '../../../shared/models';
 import {services} from '../../../shared/services';
 import {ApplicationRetryOptions} from '../application-retry-options/application-retry-options';
@@ -23,6 +24,7 @@ import './application-sync-panel.scss';
 export const ApplicationSyncPanel = ({application, selectedResource, hide}: {application: models.Application; selectedResource: string; hide: () => any}) => {
     const [form, setForm] = React.useState<FormApi>(null);
     const isVisible = !!(selectedResource && application);
+    const isMobile = useIsMobile();
     const appResources = ((application && selectedResource && application.status && application.status.resources) || [])
         .sort((first, second) => nodeKey(first).localeCompare(nodeKey(second), undefined, {numeric: true}))
         .filter(item => !item.hook);
@@ -31,29 +33,42 @@ export const ApplicationSyncPanel = ({application, selectedResource, hide}: {app
     const [isPending, setPending] = React.useState(false);
     const source = getAppDefaultSource(application);
 
+    const headerButtons = (
+        <div>
+            <button
+                qe-id='application-sync-panel-button-synchronize'
+                className='argo-button argo-button--base'
+                disabled={isPending}
+                onClick={() => form && form.submitForm(null)}>
+                <Spinner show={isPending} style={{marginRight: '5px'}} />
+                Synchronize
+            </button>{' '}
+            <button onClick={() => hide()} className='argo-button argo-button--base-o'>
+                Cancel
+            </button>
+        </div>
+    );
+
+    const mobileActions = (
+        <>
+            <button onClick={() => hide()} className='argo-button argo-button--base-o'>
+                Cancel
+            </button>
+            <button
+                qe-id='application-sync-panel-button-synchronize'
+                className='argo-button argo-button--base'
+                disabled={isPending}
+                onClick={() => form && form.submitForm(null)}>
+                <Spinner show={isPending} style={{marginRight: '5px'}} />
+                Synchronize
+            </button>
+        </>
+    );
+
     return (
         <Consumer>
-            {ctx => (
-                <SlidingPanel
-                    isMiddle={true}
-                    isShown={isVisible}
-                    onClose={() => hide()}
-                    header={
-                        <div>
-                            <button
-                                qe-id='application-sync-panel-button-synchronize'
-                                className='argo-button argo-button--base'
-                                disabled={isPending}
-                                onClick={() => form.submitForm(null)}>
-                                <Spinner show={isPending} style={{marginRight: '5px'}} />
-                                Synchronize
-                            </button>{' '}
-                            <button onClick={() => hide()} className='argo-button argo-button--base-o'>
-                                Cancel
-                            </button>
-                        </div>
-                    }>
-                    {isVisible && (
+            {ctx => {
+                const formContent = isVisible && (
                         <Form
                             defaultValues={{
                                 revision: new URLSearchParams(ctx.history.location.search).get('revision') || source.targetRevision || 'HEAD',
@@ -350,9 +365,22 @@ export const ApplicationSyncPanel = ({application, selectedResource, hide}: {app
                                 </form>
                             )}
                         </Form>
-                    )}
-                </SlidingPanel>
-            )}
+                    );
+
+                if (isMobile) {
+                    return (
+                        <MobilePanel isShown={isVisible} onClose={() => hide()} title='Synchronize Application' actions={mobileActions}>
+                            {formContent}
+                        </MobilePanel>
+                    );
+                }
+
+                return (
+                    <SlidingPanel isMiddle={true} isShown={isVisible} onClose={() => hide()} header={headerButtons}>
+                        {formContent}
+                    </SlidingPanel>
+                );
+            }}
         </Consumer>
     );
 };

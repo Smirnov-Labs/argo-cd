@@ -287,14 +287,30 @@
 
     // Resource details sliding panel: Full screen on mobile
     .sliding-panel.sliding-panel--opened {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
         z-index: 200 !important;
+        background: rgba(0, 0, 0, 0.5) !important;
 
         .sliding-panel__wrapper {
-            width: 100vw !important;
-            max-width: 100vw !important;
+            position: fixed !important;
+            top: 0 !important;
             left: 0 !important;
             right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
             transform: none !important;
+            background: #fff !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
         }
 
         // Make close button visible and accessible on mobile
@@ -326,6 +342,12 @@
 
         .sliding-panel__header {
             padding: 12px 16px !important;
+            padding-right: 60px !important; // Space for close button
+            background: #fff !important;
+            border-bottom: 1px solid #e5e5e5;
+            position: sticky;
+            top: 0;
+            z-index: 10;
 
             h4 {
                 font-size: 16px;
@@ -334,7 +356,25 @@
 
         .sliding-panel__body {
             padding: 16px !important;
-            padding-bottom: 100px !important; // Safe area
+            padding-bottom: 100px !important; // Safe area for bottom action buttons
+            background: #fff !important;
+        }
+
+        // Sticky action buttons at bottom for sync/deploy panels
+        .application-sync-panel__buttons,
+        .argo-form__buttons {
+            position: sticky;
+            bottom: 0;
+            background: #fff;
+            padding: 16px;
+            border-top: 1px solid #e5e5e5;
+            margin: 0 -16px;
+            display: flex;
+            gap: 8px;
+
+            .argo-button {
+                flex: 1;
+            }
         }
     }
 
