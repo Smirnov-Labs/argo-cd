@@ -247,14 +247,16 @@ $mobile-action-bar-height: 72px;
 
         // Style remaining buttons - expand/collapse and zoom
         a.group-nodes-button, a {
-            width: 32px;
+            min-width: 32px;
             height: 32px;
             display: inline-flex !important;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
+            border-radius: 16px;
             background: transparent;
             flex-shrink: 0;
+            padding: 0 6px;
+            gap: 3px;
 
             &:active {
                 background: rgba(0, 0, 0, 0.1);
@@ -263,6 +265,27 @@ $mobile-action-bar-height: 72px;
             i {
                 font-size: 14px;
                 color: $argo-color-gray-6;
+            }
+        }
+
+        // Add labels to expand/collapse buttons
+        > a:nth-child(4) { // Expand all (after 3 hidden)
+            &::after {
+                content: "Expand";
+                font-size: 9px;
+                color: $argo-color-gray-6;
+                text-transform: uppercase;
+                font-weight: 600;
+            }
+        }
+
+        > a:nth-child(5) { // Collapse all
+            &::after {
+                content: "Collapse";
+                font-size: 9px;
+                color: $argo-color-gray-6;
+                text-transform: uppercase;
+                font-weight: 600;
             }
         }
 
