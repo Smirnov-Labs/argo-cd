@@ -217,4 +217,85 @@ $mobile-action-bar-height: 72px;
         left: 12px;
         z-index: 3;
     }
+
+    // Mobile-friendly list view - convert table to cards
+    .argo-table-list {
+        // Hide table header on mobile
+        .argo-table-list__head {
+            display: none !important;
+        }
+
+        .argo-table-list__row {
+            margin-bottom: 8px;
+            border-radius: 8px;
+            padding: 12px !important;
+            background: $white-color;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+            .row {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 8px;
+            }
+
+            // Resource icon - make it inline with name
+            .columns.small-1 {
+                flex: 0 0 auto !important;
+                width: auto !important;
+                max-width: none !important;
+                padding: 0 !important;
+
+                .application-details__resource-icon {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+
+                    br {
+                        display: none;
+                    }
+                }
+            }
+
+            // Name column - full width on mobile
+            .columns.small-2.xxxlarge-2.application-details__item {
+                flex: 1 1 60% !important;
+                width: auto !important;
+                max-width: none !important;
+                padding: 0 !important;
+                font-weight: 600;
+                font-size: 14px;
+
+                .application-details__item_text {
+                    white-space: normal;
+                    word-break: break-word;
+                }
+            }
+
+            // Status column - show on same line as name
+            .columns.small-2.xxxlarge-1:last-child {
+                flex: 0 0 auto !important;
+                width: auto !important;
+                max-width: none !important;
+                padding: 0 !important;
+                margin-left: auto;
+            }
+
+            // Hide less important columns on mobile
+            .columns.small-1.xxxlarge-1,
+            .columns.small-2.xxxlarge-1:not(:last-child) {
+                display: none !important;
+            }
+
+            // Show namespace and created at as secondary info
+            .columns.small-2.xxxlarge-2:not(.application-details__item) {
+                flex: 0 0 100% !important;
+                width: 100% !important;
+                max-width: none !important;
+                padding: 0 !important;
+                font-size: 12px;
+                color: $argo-color-gray-6;
+                margin-top: 4px;
+            }
+        }
+    }
 }
