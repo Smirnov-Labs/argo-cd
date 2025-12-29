@@ -2,7 +2,7 @@
 @import 'node_modules/argo-ui/src/styles/theme';
 @import '../../../shared/config.scss';
 
-$mobile-header-height: 56px;
+$mobile-header-height: 48px;
 $mobile-action-bar-height: 72px;
 
 .application-details--mobile {
@@ -25,72 +25,108 @@ $mobile-action-bar-height: 72px;
     padding-bottom: $mobile-action-bar-height;
 }
 
+// Compact header: back button + app name + status badges in one row
 .application-details__mobile-header {
     position: sticky;
     top: 0;
     z-index: 3;
     background: $white-color;
     border-bottom: 1px solid $argo-color-gray-3;
-    padding: 10px 12px 8px;
-}
-
-.application-details__mobile-breadcrumb {
+    padding: 8px 12px;
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: $argo-color-gray-6;
+    gap: 8px;
+    min-height: $mobile-header-height;
 }
 
 .application-details__mobile-back {
     border: 0;
     background: transparent;
     color: $argo-color-gray-6;
-    font-weight: 600;
-    padding: 6px 4px;
+    padding: 8px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
     cursor: pointer;
+    flex-shrink: 0;
+
+    i {
+        font-size: 16px;
+    }
 }
 
-.application-details__mobile-title {
-    margin-top: 6px;
-    font-size: 16px;
+.application-details__mobile-app-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.application-details__mobile-app-name {
+    font-size: 15px;
     font-weight: 600;
     color: $argo-color-gray-7;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.application-details__mobile-status {
-    padding: 12px;
+.application-details__mobile-status-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
 
-    .application-status-panel {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 10px;
+.application-details__mobile-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: capitalize;
+
+    i {
+        font-size: 10px;
     }
 
-    .application-status-panel__item {
-        margin: 0;
-        padding: 10px 12px;
-        border-radius: 10px;
-        @include themify($themes) {
-            background: themed('background-2');
-        }
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    // Health status colors
+    &--healthy {
+        background: rgba(24, 190, 148, 0.15);
+        color: #18BE94;
     }
 
-    .application-status-panel__item-value {
-        font-size: 15px;
-        font-weight: 600;
+    &--degraded {
+        background: rgba(233, 109, 118, 0.15);
+        color: #E96D76;
     }
 
-    .application-status-panel__item-name {
-        font-size: 12px;
-        color: $argo-color-gray-6;
+    &--progressing {
+        background: rgba(13, 173, 234, 0.15);
+        color: #0DADEA;
+    }
+
+    &--suspended {
+        background: rgba(111, 126, 140, 0.15);
+        color: #6F7E8C;
+    }
+
+    &--missing, &--unknown {
+        background: rgba(204, 214, 221, 0.3);
+        color: #6F7E8C;
+    }
+
+    // Sync status colors
+    &--synced {
+        background: rgba(24, 190, 148, 0.15);
+        color: #18BE94;
+    }
+
+    &--outofsync {
+        background: rgba(247, 190, 62, 0.15);
+        color: #F7BE3E;
     }
 }
 

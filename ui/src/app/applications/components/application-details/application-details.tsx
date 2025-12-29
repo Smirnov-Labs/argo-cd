@@ -1291,6 +1291,25 @@ Are you sure you want to disable auto-sync and rollback application '${props.mat
                                 </div>
                             );
 
+                            const getHealthIcon = (status: string) => {
+                                switch (status) {
+                                    case 'Healthy': return 'fa fa-heart';
+                                    case 'Degraded': return 'fa fa-heart-broken';
+                                    case 'Progressing': return 'fa fa-circle-notch';
+                                    case 'Suspended': return 'fa fa-pause-circle';
+                                    case 'Missing': return 'fa fa-ghost';
+                                    default: return 'fa fa-question-circle';
+                                }
+                            };
+
+                            const getSyncIcon = (status: string) => {
+                                switch (status) {
+                                    case 'Synced': return 'fa fa-check-circle';
+                                    case 'OutOfSync': return 'fa fa-arrow-alt-circle-up';
+                                    default: return 'fa fa-question-circle';
+                                }
+                            };
+
                             const renderMobile = () => (
                                 <div className={`application-details application-details--mobile ${props.match.params.name}`}>
                                     <Page title={pageTitle} useTitleOnly={true} hideAuth={true}>
@@ -1299,28 +1318,24 @@ Are you sure you want to disable auto-sync and rollback application '${props.mat
                                         </Helmet>
                                         {debugBadge}
                                         <div className='application-details__mobile'>
+                                            {/* Compact mobile header: back + app name + status badges inline */}
                                             <div className='application-details__mobile-header'>
-                                                <div className='application-details__mobile-breadcrumb'>
-                                                    <button type='button' className='application-details__mobile-back' onClick={() => appContext.navigation.goto('/applications')}>
-                                                        <i className='fa fa-chevron-left' />
-                                                        Applications
-                                                    </button>
-                                                    <span>/</span>
+                                                <button type='button' className='application-details__mobile-back' onClick={() => appContext.navigation.goto('/applications')}>
+                                                    <i className='fa fa-chevron-left' />
+                                                </button>
+                                                <div className='application-details__mobile-app-info'>
+                                                    <span className='application-details__mobile-app-name'>{props.match.params.name}</span>
+                                                    <div className='application-details__mobile-status-badges'>
+                                                        <span className={`application-details__mobile-badge application-details__mobile-badge--${application.status.health?.status?.toLowerCase() || 'unknown'}`}>
+                                                            <i className={getHealthIcon(application.status.health?.status)} />
+                                                            {application.status.health?.status || 'Unknown'}
+                                                        </span>
+                                                        <span className={`application-details__mobile-badge application-details__mobile-badge--${application.status.sync?.status?.toLowerCase() || 'unknown'}`}>
+                                                            <i className={getSyncIcon(application.status.sync?.status)} />
+                                                            {application.status.sync?.status || 'Unknown'}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className='application-details__mobile-title'>
-                                                    <ApplicationsDetailsAppDropdown appName={props.match.params.name} objectListKind={objectListKind} />
-                                                </div>
-                                            </div>
-                                            <div className='application-details__mobile-status'>
-                                                <ApplicationStatusPanel
-                                                    application={application}
-                                                    showDiff={() => selectNode(appFullName, 0, 'diff')}
-                                                    showOperation={() => setOperationStatusVisible(true)}
-                                                    showHydrateOperation={() => setHydrateOperationStatusVisible(true)}
-                                                    showConditions={() => setConditionsStatusVisible(true)}
-                                                    showExtension={id => setExtensionPanelVisible(id)}
-                                                    showMetadataInfo={revision => setState(prevState => ({...prevState, revision}))}
-                                                />
                                             </div>
                                             {mobileViewTabs}
                                             <div className='application-details__mobile-content'>
