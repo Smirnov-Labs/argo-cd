@@ -8,7 +8,7 @@ import {BehaviorSubject, combineLatest, from, merge, Observable} from 'rxjs';
 import {delay, filter, map, mergeMap, repeat, retryWhen} from 'rxjs/operators';
 import {Helmet} from 'react-helmet';
 
-import {DataLoader, EmptyState, ErrorNotification, ObservableQuery, Page, Paginate, Revision, Timestamp} from '../../../shared/components';
+import {DataLoader, EmptyState, ErrorNotification, MobilePanel, ObservableQuery, Page, Paginate, Revision, Timestamp} from '../../../shared/components';
 import {AppContext, Context, ContextApis} from '../../../shared/context';
 import * as appModels from '../../../shared/models';
 import {AppDetailsPreferences, AppsDetailsViewKey, AppsDetailsViewType, services} from '../../../shared/services';
@@ -1171,9 +1171,18 @@ Are you sure you want to disable auto-sync and rollback application '${props.mat
                                             />
                                         )}
                                     </SlidingPanel>
-                                    <SlidingPanel isShown={showOperationState && !!operationState} onClose={() => setOperationStatusVisible(false)}>
-                                        {operationState && <ApplicationOperationState application={application} operationState={operationState} />}
-                                    </SlidingPanel>
+                                    {isMobile ? (
+                                        <MobilePanel
+                                            isShown={showOperationState && !!operationState}
+                                            onClose={() => setOperationStatusVisible(false)}
+                                            title='Sync Status'>
+                                            {operationState && <ApplicationOperationState application={application} operationState={operationState} />}
+                                        </MobilePanel>
+                                    ) : (
+                                        <SlidingPanel isShown={showOperationState && !!operationState} onClose={() => setOperationStatusVisible(false)}>
+                                            {operationState && <ApplicationOperationState application={application} operationState={operationState} />}
+                                        </SlidingPanel>
+                                    )}
                                     <SlidingPanel isShown={showHydrateOperationState && !!hydrateOperationState} onClose={() => setHydrateOperationStatusVisible(false)}>
                                         {hydrateOperationState && <ApplicationHydrateOperationState hydrateOperationState={hydrateOperationState} />}
                                     </SlidingPanel>
@@ -1225,7 +1234,8 @@ Are you sure you want to disable auto-sync and rollback application '${props.mat
                                         borderRadius: 8,
                                         fontSize: 11,
                                         fontWeight: 600,
-                                        letterSpacing: '0.02em'
+                                        letterSpacing: '0.02em',
+                                        pointerEvents: 'none' as const
                                     }}>
                                     {`mobile=${isMobile ? 'true' : 'false'} width=${viewportWidth}px`}
                                 </div>
