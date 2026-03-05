@@ -15,10 +15,51 @@ $deselected-text: #818d94;
     color: white;
     background-color: #0f2733;
     overflow: auto;
-    z-index: 2;
+    z-index: 10000; // Very high z-index for mobile overlay
+    transition: transform 0.3s ease-in-out;
+
+    // Mobile: sidebar is hidden by default and shown as overlay when opened
+    @media screen and (max-width: $mobile-breakpoint - 1px) {
+        transform: translateX(-100%);
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+        width: 280px;
+        min-width: 280px;
+        padding: 0 16px;
+
+        // Only show when explicitly opened via hamburger menu
+        &.sidebar--mobile-open {
+            transform: translateX(0);
+        }
+    }
 
     &__container {
         padding: 0 5px;
+    }
+
+    // Mobile close button - only visible on mobile
+    &__mobile-close {
+        display: none;
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: none;
+        border: none;
+        color: $deselected-text;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 8px;
+        min-width: 44px;
+        min-height: 44px;
+
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        &:hover {
+            color: white;
+        }
     }
 
     &__logo-container {
@@ -108,47 +149,115 @@ $deselected-text: #818d94;
         margin-bottom: 1em;
         font-size: 20px;
         color: $deselected-text;
+
+        // Hide on mobile - hamburger menu handles open/close
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            display: none;
+        }
     }
 
     &--collapsed {
-        min-width: $collapsed-sidebar-width;
-        width: $collapsed-sidebar-width;
-        padding: 15px 5px;
-        overflow: hidden !important;
-
-        .sidebar__logo {
-            margin-left: 0;
-            flex-direction: column;
-            margin-bottom: 18px;
-            margin-top: -7px;
-            justify-content: center;
+        // On mobile, collapsed means hidden (off-screen)
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            transform: translateX(-100%);
         }
 
-        .sidebar__collapse-button {
-            margin-left: 0;
-            margin-top: 1em;
-        }
+        // On desktop, collapsed means narrow sidebar
+        @media screen and (min-width: $mobile-breakpoint) {
+            min-width: $collapsed-sidebar-width;
+            width: $collapsed-sidebar-width;
+            padding: 15px 5px;
+            overflow: hidden !important;
 
-        .sidebar__logo img {
-            margin-right: 0;
-        }
+            .sidebar__logo {
+                margin-left: 0;
+                flex-direction: column;
+                margin-bottom: 18px;
+                margin-top: -7px;
+                justify-content: center;
+            }
 
-        .sidebar__nav-item i {
-            margin-right: 0;
-            margin-left: 7px;
-        }
+            .sidebar__collapse-button {
+                margin-left: 0;
+                margin-top: 1em;
+            }
 
-        .sidebar__nav-item i.fa {
-            margin-left: 9px;
-        }
+            .sidebar__logo img {
+                margin-right: 0;
+            }
 
-        .sidebar__filter-button {
-            i {
-                font-size: 14px;
-                margin-top: 2em;
-                margin-left: 13px;
-                color: $deselected-text;
+            .sidebar__nav-item i {
+                margin-right: 0;
+                margin-left: 7px;
+            }
+
+            .sidebar__nav-item i.fa {
+                margin-left: 9px;
+            }
+
+            .sidebar__filter-button {
+                i {
+                    font-size: 14px;
+                    margin-top: 2em;
+                    margin-left: 13px;
+                    color: $deselected-text;
+                }
             }
         }
+    }
+}
+
+// Mobile overlay backdrop - covers ALL content including fixed headers
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.75);
+    z-index: 9999; // Just below sidebar (10000), above all content
+
+    &--visible {
+        // Only show on mobile
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            display: block;
+        }
+    }
+}
+
+// Mobile hamburger menu button
+.mobile-menu-button {
+    display: none;
+    position: fixed;
+    top: 4px;
+    left: 4px;
+    z-index: 10001; // Higher than sidebar (10000) so it's always clickable
+    background-color: #0f2733;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    height: 40px;
+    width: 40px;
+    min-height: 40px;
+    min-width: 40px;
+
+    @media screen and (max-width: $mobile-breakpoint - 1px) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        i {
+            font-size: 18px;
+        }
+    }
+
+    &:active {
+        background-color: #143d50;
     }
 }

@@ -1,11 +1,16 @@
 @import 'node_modules/argo-ui/src/styles/config';
 @import 'node_modules/foundation-sites/scss/util/util';
 @import 'node_modules/argo-ui/src/styles/theme';
+@import '../../../shared/config';
 
 .applications-list {
     padding: 1em;
     @media screen and (max-width: 1024px) {
         padding: 0;
+    }
+    @media screen and (max-width: $mobile-breakpoint - 1px) {
+        padding: 0.5em;
+        padding-top: 4px; // Toolbar padder handles the offset
     }
     min-height: 88vh;
     &__title {
@@ -114,6 +119,11 @@
             flex-basis: 100%;
             margin-left: 0;
         }
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            margin-left: 0;
+            margin-bottom: 8px;
+            width: 100%;
+        }
         line-height: normal;
     }
 
@@ -132,6 +142,11 @@
         @include breakpoint(large up) {
             flex-shrink: 1;
             width: 300px;
+        }
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            width: 100%;
+            min-height: 44px; // Touch-friendly height
+            height: 44px;
         }
         i {
             font-size: 12px;

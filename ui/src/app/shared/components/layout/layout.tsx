@@ -4,6 +4,7 @@ import {ViewPreferences} from '../../services';
 import {useTheme} from '../../utils';
 
 require('./layout.scss');
+require('../../styles/mobile.scss');
 
 export interface LayoutProps {
     navItems: Array<{path: string; iconClassName: string; title: string}>;
