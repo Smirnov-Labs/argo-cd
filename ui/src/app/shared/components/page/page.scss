@@ -68,11 +68,6 @@
     padding: 3px;
     cursor: pointer;
 
-    // Hide on mobile - accessible via sidebar menu instead
-    @media screen and (max-width: $mobile-breakpoint - 1px) {
-        display: none !important;
-    }
-
     &:focus {
         color: $argo-color-teal-5;
         box-shadow: 0 0 0 0.1em $argo-color-teal-5;

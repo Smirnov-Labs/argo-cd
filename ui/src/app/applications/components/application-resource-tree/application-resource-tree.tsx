@@ -909,6 +909,7 @@ function findNetworkTargets(nodes: ResourceTreeNode[], networkingInfo: models.Re
 }
 export const ApplicationResourceTree = (props: ApplicationResourceTreeProps) => {
     const graph = new dagre.graphlib.Graph();
+    // 640px matches $mobile-breakpoint in ui/src/app/shared/config.scss
     const isMobileLayout = typeof window !== 'undefined' && window.innerWidth < 640;
     graph.setGraph({nodesep: isMobileLayout ? 5 : 25, rankdir: 'LR', marginy: isMobileLayout ? 5 : 45, marginx: isMobileLayout ? -120 : -100, ranksep: isMobileLayout ? 50 : 80});
     graph.setDefaultEdgeLabel(() => ({}));

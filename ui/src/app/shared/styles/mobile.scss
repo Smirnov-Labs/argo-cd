@@ -1,4 +1,5 @@
 @import '../config.scss';
+@import 'node_modules/argo-ui/src/styles/config';
 @import 'node_modules/foundation-sites/scss/util/util';
 
 // Mobile utility mixins and global mobile styles
@@ -213,23 +214,7 @@
         padding: 10px;
     }
 
-    // Improve tab navigation on mobile
-    .tabs {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
 
-        &__tab {
-            flex-shrink: 0;
-            min-height: $touch-target-size;
-        }
-    }
-
-    // ==========================================================================
-    // APPLICATIONS LIST TOOLBAR - Compact single-row on mobile
-    // ==========================================================================
-
-    // Hide redundant "APPLICATIONS TILES/LIST" page heading on mobile
-    // Note: .applications-list__title on tile cards is the app name - keep that visible
     // ==========================================================================
     // APPLICATIONS LIST - MOBILE TOOLBAR
     // Hide the argo-ui default top bar; FlexTopBar is the only toolbar on mobile
@@ -487,7 +472,6 @@
             flex: 1 1 auto !important;
             min-height: 0 !important;
             overflow: auto !important;
-        }
 
             // Floating graph controls (zoom, etc)
             .graph-options-panel {
@@ -500,7 +484,7 @@
                 padding: 4px 8px;
                 border-radius: 20px;
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-                background: #fff;
+                background: white;
                 z-index: 90;
                 display: flex;
                 flex-direction: row;
@@ -521,6 +505,7 @@
                     display: none;
                 }
             }
+        }
 
         // View type selector: Floating pill (Tree, Pods, Network, List)
         &__view-type {
@@ -533,7 +518,7 @@
             padding: 4px 8px;
             border-radius: 20px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            background: #fff;
+            background: white;
             z-index: 90;
             display: flex !important;
             gap: 2px;
@@ -549,8 +534,8 @@
                 cursor: pointer;
 
                 &.selected {
-                    background: #0dadea;
-                    color: #fff;
+                    background: $argo-color-teal-5;
+                    color: white;
                 }
             }
         }
@@ -605,10 +590,15 @@
         }
     }
 
-    // Tabs in resource details: Scrollable
+    // Tabs: Scrollable with touch-friendly targets
     .tabs {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+
+        &__tab {
+            flex-shrink: 0;
+            min-height: $touch-target-size;
+        }
 
         &__nav {
             white-space: nowrap;

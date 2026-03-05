@@ -27,10 +27,12 @@
             margin-bottom: 0 !important;
         }
 
+        // Targets .paginate > react-paginate wrapper div
         & > div {
             margin-bottom: 0 !important;
         }
 
+        // Targets .paginate > wrapper > pagination controls row
         & > div > div {
             padding-left: 0.25em !important;
             margin-bottom: 0 !important;
