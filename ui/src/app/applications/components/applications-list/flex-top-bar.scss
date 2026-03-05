@@ -10,11 +10,13 @@
     align-items: center;
     flex-wrap: wrap;
 
-    // On mobile, adjust for no sidebar and hamburger menu
+    // On mobile, compact single-row toolbar
     @media screen and (max-width: $mobile-breakpoint - 1px) {
         left: 0;
-        padding-left: 60px; // Space for hamburger button
-        padding-right: 8px;
+        padding: 0 8px 0 56px; // Space for hamburger button
+        height: 48px;
+        flex-wrap: nowrap;
+        overflow: hidden;
     }
     &__actions {
         display: flex;
@@ -23,6 +25,12 @@
         @include breakpoint(medium down) {
             flex-basis: 100%;
             justify-content: center;
+        }
+        // On mobile, inline actions compactly
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            flex-basis: auto;
+            height: 48px;
+            gap: 2px;
         }
         button {
             display: block;
@@ -35,6 +43,12 @@
         @include breakpoint(medium down) {
             flex-wrap: wrap;
         }
+        // On mobile, keep tools in single row
+        @media screen and (max-width: $mobile-breakpoint - 1px) {
+            flex-wrap: nowrap;
+            overflow: hidden;
+            gap: 4px;
+        }
     }
 
     &__padder {
@@ -43,7 +57,7 @@
             height: 150px;
         }
         @media screen and (max-width: $mobile-breakpoint - 1px) {
-            height: 180px; // Extra space for mobile layout
+            height: 52px; // Match compact toolbar height
         }
     }
 }

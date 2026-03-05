@@ -10,7 +10,7 @@
     }
     @media screen and (max-width: $mobile-breakpoint - 1px) {
         padding: 0.5em;
-        padding-top: 60px; // Space for hamburger menu
+        padding-top: 4px; // Toolbar padder handles the offset
     }
     min-height: 88vh;
     &__title {

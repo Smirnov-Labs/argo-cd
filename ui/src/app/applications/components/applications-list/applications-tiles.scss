@@ -10,8 +10,8 @@
     // On mobile, use smaller minimum and full-width cards
     @media screen and (max-width: $mobile-breakpoint - 1px) {
         grid-template-columns: 1fr; // Single column on mobile
-        gap: 16px;
-        padding: 0 8px;
+        gap: 10px;
+        padding: 0 4px;
     }
 
     // On small tablets, allow 2 columns

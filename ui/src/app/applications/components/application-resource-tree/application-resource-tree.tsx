@@ -909,7 +909,8 @@ function findNetworkTargets(nodes: ResourceTreeNode[], networkingInfo: models.Re
 }
 export const ApplicationResourceTree = (props: ApplicationResourceTreeProps) => {
     const graph = new dagre.graphlib.Graph();
-    graph.setGraph({nodesep: 25, rankdir: 'LR', marginy: 45, marginx: -100, ranksep: 80});
+    const isMobileLayout = typeof window !== 'undefined' && window.innerWidth < 640;
+    graph.setGraph({nodesep: isMobileLayout ? 5 : 25, rankdir: 'LR', marginy: isMobileLayout ? 5 : 45, marginx: isMobileLayout ? -120 : -100, ranksep: isMobileLayout ? 50 : 80});
     graph.setDefaultEdgeLabel(() => ({}));
     const overridesCount = getAppOverridesCount(props.app);
     const appNode = {
@@ -1223,6 +1224,28 @@ export const ApplicationResourceTree = (props: ApplicationResourceTreeProps) => 
     }
     dagre.layout(graph);
 
+    // On mobile, shift all nodes up to reduce top whitespace
+    // dagre LR layout centers root vertically among children, creating a gap above
+    if (isMobileLayout) {
+        let graphMinY = Infinity;
+        graph.nodes().forEach(id => {
+            const node = graph.node(id);
+            if (node) {
+                graphMinY = Math.min(graphMinY, node.y);
+            }
+        });
+        // Shift all nodes so the topmost node starts at Y=10
+        if (graphMinY > 10) {
+            const yOffset = graphMinY - 10;
+            graph.nodes().forEach(id => {
+                const node = graph.node(id);
+                if (node) {
+                    node.y -= yOffset;
+                }
+            });
+        }
+    }
+
     const edges: {from: string; to: string; lines: Line[]; backgroundImage?: string; color?: string; colors?: string | {[key: string]: any}}[] = [];
     const nodeOffset = new Map<string, number>();
     const reverseEdge = new Map<string, number>();
@@ -1355,7 +1378,12 @@ export const ApplicationResourceTree = (props: ApplicationResourceTreeProps) => 
                 onPointerUp={onGraphDragEnd}
                 onPointerLeave={onGraphDragEnd}
                 className={classNames('application-resource-tree', {'application-resource-tree--network': props.useNetworkingHierarchy})}
-                style={{width: size.width + 150, height: size.height + 250, transformOrigin: '0% 4%', transform: `scale(${props.zoom})`}}>
+                style={{
+                    width: size.width + (isMobileLayout ? 50 : 150),
+                    height: size.height + (isMobileLayout ? 50 : 250),
+                    transformOrigin: '0% 0%',
+                    transform: `scale(${isMobileLayout ? Math.min(props.zoom, (window.innerWidth - 8) / (size.width + 50)) : props.zoom})`
+                }}>
                 {graphNodes.map(key => {
                     const node = graph.node(key);
                     const nodeType = node.type;
