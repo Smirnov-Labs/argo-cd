@@ -2,26 +2,22 @@ import * as React from 'react';
 import '@testing-library/jest-dom';
 import {Sidebar} from './sidebar';
 import {Context} from '../shared/context';
-import {
-    renderWithContext,
-    setViewportSize,
-    VIEWPORTS,
-    screen,
-    fireEvent,
-    waitFor
-} from '../__tests__/test-utils';
-import {
-    mockRouterContext,
-    mockNavItems,
-    mockViewPreferences,
-    mockVersion
-} from '../__tests__/mock-data';
+import {render} from '@testing-library/react';
+import {renderWithContext, setViewportSize, VIEWPORTS, screen, fireEvent, waitFor} from '../__tests__/test-utils';
+import {mockNavItems, mockViewPreferences, mockVersion} from '../__tests__/mock-data';
 
-// Mock the services
+// Mock services (inline version value to avoid hoisting issues with mockVersion)
 jest.mock('../shared/services', () => ({
     services: {
         version: {
-            version: jest.fn().mockResolvedValue(mockVersion)
+            version: jest.fn().mockResolvedValue({
+                Version: '2.9.0',
+                BuildDate: '2023-11-15T12:00:00Z',
+                GitCommit: 'abc123def456',
+                GoVersion: 'go1.21.0',
+                Compiler: 'gc',
+                Platform: 'linux/amd64'
+            })
         },
         viewPreferences: {
             updatePreferences: jest.fn()
@@ -30,24 +26,16 @@ jest.mock('../shared/services', () => ({
     ViewPreferences: {}
 }));
 
-// Mock argo-ui components
 jest.mock('argo-ui', () => ({
     Tooltip: ({children}: {children: React.ReactNode}) => <div>{children}</div>,
     useData: (fn: () => Promise<any>) => {
         const [data, setData] = React.useState<any>(null);
         const [loading, setLoading] = React.useState(true);
         const [error, setError] = React.useState<any>(null);
-
         React.useEffect(() => {
-            fn().then(result => {
-                setData(result);
-                setLoading(false);
-            }).catch(err => {
-                setError(err);
-                setLoading(false);
-            });
+            fn().then(result => { setData(result); setLoading(false); })
+              .catch(err => { setError(err); setLoading(false); });
         }, []);
-
         return [data, loading, error];
     }
 }));
@@ -55,7 +43,6 @@ jest.mock('argo-ui', () => ({
 describe('Sidebar Component', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        // Set desktop viewport by default
         setViewportSize(VIEWPORTS.DESKTOP.HD.width, VIEWPORTS.DESKTOP.HD.height);
     });
 
@@ -67,6 +54,7 @@ describe('Sidebar Component', () => {
 
             expect(screen.getByText('Applications')).toBeInTheDocument();
             expect(screen.getByText('Settings')).toBeInTheDocument();
+            expect(screen.getByText('Help')).toBeInTheDocument();
         });
 
         test('renders version number', async () => {
@@ -91,52 +79,56 @@ describe('Sidebar Component', () => {
 
     describe('Mobile Menu Behavior', () => {
         beforeEach(() => {
-            // Set mobile viewport for these tests
             setViewportSize(VIEWPORTS.MOBILE.IPHONE_12.width, VIEWPORTS.MOBILE.IPHONE_12.height);
         });
 
-        test('renders mobile hamburger menu button', () => {
+        test('renders mobile open menu button', () => {
             renderWithContext(
                 <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
             );
 
-            const hamburgerButton = screen.getByLabelText('Toggle menu');
-            expect(hamburgerButton).toBeInTheDocument();
-            expect(hamburgerButton).toHaveClass('mobile-menu-button');
+            const openButton = screen.getByLabelText('Open menu');
+            expect(openButton).toBeInTheDocument();
+            expect(openButton).toHaveClass('mobile-menu-button');
         });
 
-        test('toggles mobile menu when hamburger button is clicked', () => {
+        test('opens menu when open button is clicked', () => {
             const {container} = renderWithContext(
                 <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
             );
 
-            const hamburgerButton = screen.getByLabelText('Toggle menu');
             const overlay = container.querySelector('.sidebar-overlay');
-
-            // Initially, overlay should not be visible
             expect(overlay).not.toHaveClass('sidebar-overlay--visible');
 
-            // Click to open menu
-            fireEvent.click(hamburgerButton);
+            fireEvent.click(screen.getByLabelText('Open menu'));
+            expect(overlay).toHaveClass('sidebar-overlay--visible');
+        });
+
+        test('closes menu via close button', () => {
+            const {container} = renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
+            );
+
+            const overlay = container.querySelector('.sidebar-overlay');
+
+            // Open menu
+            fireEvent.click(screen.getByLabelText('Open menu'));
             expect(overlay).toHaveClass('sidebar-overlay--visible');
 
-            // Click to close menu
-            fireEvent.click(hamburgerButton);
+            // Close menu via close button
+            fireEvent.click(screen.getByLabelText('Close menu'));
             expect(overlay).not.toHaveClass('sidebar-overlay--visible');
         });
 
         test('closes mobile menu when overlay is clicked', () => {
-            const {container} = render(
-                <renderWithContext>
-                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
-                </Context.Provider>
+            const {container} = renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
             );
 
-            const hamburgerButton = screen.getByLabelText('Toggle menu');
             const overlay = container.querySelector('.sidebar-overlay');
 
             // Open menu
-            fireEvent.click(hamburgerButton);
+            fireEvent.click(screen.getByLabelText('Open menu'));
             expect(overlay).toHaveClass('sidebar-overlay--visible');
 
             // Click overlay to close
@@ -145,17 +137,14 @@ describe('Sidebar Component', () => {
         });
 
         test('closes mobile menu when Escape key is pressed', () => {
-            const {container} = render(
-                <renderWithContext>
-                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
-                </Context.Provider>
+            const {container} = renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
             );
 
-            const hamburgerButton = screen.getByLabelText('Toggle menu');
             const overlay = container.querySelector('.sidebar-overlay');
 
             // Open menu
-            fireEvent.click(hamburgerButton);
+            fireEvent.click(screen.getByLabelText('Open menu'));
             expect(overlay).toHaveClass('sidebar-overlay--visible');
 
             // Press Escape
@@ -163,80 +152,88 @@ describe('Sidebar Component', () => {
             expect(overlay).not.toHaveClass('sidebar-overlay--visible');
         });
 
-        test('changes hamburger icon when menu is open', () => {
-            render(
-                <renderWithContext>
-                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
-                </Context.Provider>
+        test('hides open button when menu is open and shows close button', () => {
+            renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
             );
 
-            const hamburgerButton = screen.getByLabelText('Toggle menu');
-            let icon = hamburgerButton.querySelector('i');
+            // Initially: open button visible, no close button query (it exists but menu closed)
+            expect(screen.getByLabelText('Open menu')).toBeInTheDocument();
 
-            // Initially shows bars icon
-            expect(icon).toHaveClass('fa-bars');
+            // Open the menu
+            fireEvent.click(screen.getByLabelText('Open menu'));
 
-            // Click to open
-            fireEvent.click(hamburgerButton);
-            icon = hamburgerButton.querySelector('i');
-            expect(icon).toHaveClass('fa-times');
+            // Now: open button should be gone, close button should be present
+            expect(screen.queryByLabelText('Open menu')).not.toBeInTheDocument();
+            expect(screen.getByLabelText('Close menu')).toBeInTheDocument();
+        });
 
-            // Click to close
-            fireEvent.click(hamburgerButton);
-            icon = hamburgerButton.querySelector('i');
-            expect(icon).toHaveClass('fa-bars');
+        test('adds mobile-open class when menu is open', () => {
+            const {container} = renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
+            );
+
+            const sidebar = container.querySelector('.sidebar');
+            expect(sidebar).not.toHaveClass('sidebar--mobile-open');
+
+            fireEvent.click(screen.getByLabelText('Open menu'));
+            expect(sidebar).toHaveClass('sidebar--mobile-open');
         });
 
         test('mobile menu overrides hideSidebar preference', () => {
             const collapsedPrefs = {...mockViewPreferences.default, hideSidebar: true};
-            const {container} = render(
-                <renderWithContext>
-                    <Sidebar navItems={mockNavItems} pref={collapsedPrefs} onVersionClick={() => {}} />
-                </Context.Provider>
+            const {container} = renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={collapsedPrefs} onVersionClick={() => {}} />
             );
 
-            const hamburgerButton = screen.getByLabelText('Toggle menu');
             const sidebar = container.querySelector('.sidebar');
 
             // With hideSidebar true, sidebar should be collapsed
             expect(sidebar).toHaveClass('sidebar--collapsed');
 
             // Open mobile menu - should remove collapsed class
-            fireEvent.click(hamburgerButton);
+            fireEvent.click(screen.getByLabelText('Open menu'));
             expect(sidebar).not.toHaveClass('sidebar--collapsed');
 
             // Close mobile menu - should add collapsed class back
-            fireEvent.click(hamburgerButton);
+            fireEvent.click(screen.getByLabelText('Close menu'));
             expect(sidebar).toHaveClass('sidebar--collapsed');
         });
     });
 
     describe('Navigation Behavior', () => {
         test('closes mobile menu when navigation occurs', () => {
-            const mockRouterContextWithNav = {
+            setViewportSize(VIEWPORTS.MOBILE.IPHONE_12.width, VIEWPORTS.MOBILE.IPHONE_12.height);
+
+            const mockContext = {
                 history: {
                     location: {pathname: '/applications'},
                     push: jest.fn()
                 }
             };
 
+            // Use render directly (not renderWithContext) so rerender does not re-apply a wrapper
             const {container, rerender} = render(
-                <Context.Provider value={mockRouterContextWithNav as any}>
+                <Context.Provider value={mockContext as any}>
                     <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
                 </Context.Provider>
             );
 
-            const hamburgerButton = screen.getByLabelText('Toggle menu');
             const overlay = container.querySelector('.sidebar-overlay');
 
             // Open menu
-            fireEvent.click(hamburgerButton);
+            fireEvent.click(screen.getByLabelText('Open menu'));
             expect(overlay).toHaveClass('sidebar-overlay--visible');
 
-            // Simulate navigation by changing location
-            mockRouterContextWithNav.history.location.pathname = '/settings';
+            // Simulate navigation by changing location and re-rendering with new context object
+            const updatedContext = {
+                history: {
+                    location: {pathname: '/settings'},
+                    push: jest.fn()
+                }
+            };
             rerender(
-                <Context.Provider value={mockRouterContextWithNav as any}>
+                <Context.Provider value={updatedContext as any}>
                     <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
                 </Context.Provider>
             );
@@ -246,10 +243,8 @@ describe('Sidebar Component', () => {
         });
 
         test('highlights active navigation item', () => {
-            const {container} = render(
-                <renderWithContext>
-                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
-                </Context.Provider>
+            const {container} = renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
             );
 
             const navItems = container.querySelectorAll('.sidebar__nav-item');
@@ -262,28 +257,34 @@ describe('Sidebar Component', () => {
     });
 
     describe('Accessibility', () => {
-        test('hamburger button has aria-label', () => {
-            render(
-                <renderWithContext>
-                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
-                </Context.Provider>
+        test('open menu button has correct aria-label', () => {
+            renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
             );
 
-            const hamburgerButton = screen.getByLabelText('Toggle menu');
-            expect(hamburgerButton).toHaveAttribute('aria-label', 'Toggle menu');
+            const openButton = screen.getByLabelText('Open menu');
+            expect(openButton).toHaveAttribute('aria-label', 'Open menu');
+        });
+
+        test('close menu button has correct aria-label', () => {
+            renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
+            );
+
+            // Open menu first to make close button the primary action
+            fireEvent.click(screen.getByLabelText('Open menu'));
+
+            const closeButton = screen.getByLabelText('Close menu');
+            expect(closeButton).toHaveAttribute('aria-label', 'Close menu');
         });
 
         test('keyboard navigation works with Escape key', () => {
-            const {container} = render(
-                <renderWithContext>
-                    <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
-                </Context.Provider>
+            const {container} = renderWithContext(
+                <Sidebar navItems={mockNavItems} pref={mockViewPreferences.default} onVersionClick={() => {}} />
             );
 
-            const hamburgerButton = screen.getByLabelText('Toggle menu');
-
             // Open with click
-            fireEvent.click(hamburgerButton);
+            fireEvent.click(screen.getByLabelText('Open menu'));
 
             // Close with keyboard
             fireEvent.keyDown(window, {key: 'Escape'});
